@@ -13,12 +13,15 @@
             margin-bottom: 18px;
         }
         .merchant-logo {
-            width: 96px;
-            height: 48px;
-            border-radius: 12px;
+            width: 60px;
+            height: 60px;
+            border-radius: 40%; /* More square than circle, crops more from corners */
             background: #fff;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             object-fit: cover;
+            object-position: center;
+            border: .5px solid #fff; /* Thicker border crops more from the edge */
+            padding: 0px;
         }
         .merchant-title {
             font-size: 2rem;
@@ -88,10 +91,11 @@
             background: linear-gradient(135deg, #20c997, #28a745);
         }
         .theme-switcher {
-            position: absolute;
+            position: fixed;
             top: 18px;
             right: 24px;
-            z-index: 1200;
+            z-index: 4000;
+            pointer-events: auto;
         }
         .theme-switcher button {
             background: #fff;
@@ -446,136 +450,200 @@
         }
 
         /* History Screen Styles */
+
         .history-screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: var(--history-bg, linear-gradient(135deg, #232526 0%, #414345 100%));
+            color: var(--history-text, #fff);
             display: flex;
             flex-direction: column;
             z-index: 1000;
             overflow: hidden;
             padding: 0;
             box-sizing: border-box;
+            animation: fadeInHistory 0.5s cubic-bezier(0.4,0,0.2,1);
         }
-
+        @keyframes fadeInHistory {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
         .history-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 24px 28px 18px 28px;
+            border-bottom: 1px solid var(--history-border, rgba(255,255,255,0.08));
+            background: var(--history-header-bg, rgba(36, 37, 38, 0.92));
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
         }
-
         .history-header h2 {
             margin: 0;
-            font-size: 1.8rem;
+            font-size: 2.1rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: var(--history-header-text, #fff);
+            text-shadow: 0 2px 8px rgba(0,0,0,0.13);
         }
-
         .close-button {
-            background: rgba(255, 255, 255, 0.2);
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
             border: none;
-            color: white;
-            font-size: 1.5rem;
-            width: 40px;
-            height: 40px;
+            color: #fff;
+            font-size: 1.6rem;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             cursor: pointer;
-            transition: background 0.3s ease;
+            transition: background 0.3s, transform 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.10);
         }
-
         .close-button:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transform: scale(1.08);
         }
-
         .history-controls {
-            padding: 20px;
+            padding: 18px 28px 10px 28px;
             display: flex;
-            gap: 15px;
+            gap: 18px;
             flex-wrap: wrap;
+            background: var(--history-controls-bg, rgba(36, 37, 38, 0.85));
         }
-
         .scan-wallet-button, .show-all-button {
             flex: 1;
-            min-width: 200px;
-            padding: 15px 20px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid white;
-            color: white;
-            border-radius: 15px;
-            font-size: 1rem;
+            min-width: 160px;
+            padding: 13px 0;
+            background: var(--history-btn-bg, linear-gradient(135deg, #232526 0%, #764ba2 100%));
+            border: none;
+            color: var(--history-btn-text, #fff);
+            border-radius: 13px;
+            font-size: 1.08rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+            transition: background 0.2s, color 0.2s, transform 0.18s;
+            outline: none;
         }
-
         .scan-wallet-button:hover, .show-all-button:hover {
-            background: white;
-            color: #333;
+            background: var(--history-btn-hover-bg, linear-gradient(135deg, #764ba2 0%, #232526 100%));
+            color: #ffd700;
+            transform: translateY(-2px) scale(1.04);
         }
-
         .history-content {
             flex: 1;
-            padding: 0 20px;
+            padding: 0 0 0 0;
             overflow-y: auto;
+            background: var(--history-content-bg, linear-gradient(135deg, #232526 0%, #414345 100%));
         }
-
         .history-list {
             max-height: 100%;
+            padding: 18px 18px 32px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
         }
-
         .no-history {
             text-align: center;
-            padding: 40px;
+            padding: 60px 0 40px 0;
             opacity: 0.7;
-            font-size: 1.2rem;
+            font-size: 1.25rem;
+            color: var(--history-no-history, #bbb);
         }
-
         .transaction-item {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-left: 4px solid #4CAF50;
+            background: var(--history-item-bg, linear-gradient(135deg, #2d2e30 0%, #3a3b3d 100%));
+            border-radius: 18px;
+            padding: 18px 18px 14px 18px;
+            margin-bottom: 0;
+            border-left: 5px solid #20c997;
+            box-shadow: 0 4px 18px rgba(36,37,38,0.13);
+            transition: box-shadow 0.2s, transform 0.18s;
+            position: relative;
+            overflow: hidden;
+            animation: fadeInTransaction 0.5s cubic-bezier(0.4,0,0.2,1);
         }
-
+        @keyframes fadeInTransaction {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
         .transaction-item.failed {
             border-left-color: #f44336;
+            background: var(--history-item-failed-bg, linear-gradient(135deg, #3a2323 0%, #4a2d2d 100%));
         }
-
         .transaction-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 10px;
         }
-
         .transaction-amount {
-            font-size: 1.4rem;
-            font-weight: bold;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #20c997;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 8px rgba(32,201,151,0.08);
         }
-
+        .transaction-item.failed .transaction-amount {
+            color: #f44336;
+            text-shadow: 0 2px 8px rgba(244,67,54,0.10);
+        }
         .transaction-time {
-            font-size: 0.9rem;
-            opacity: 0.8;
+            font-size: 1.01rem;
+            opacity: 0.7;
+            font-weight: 500;
+            color: var(--history-time, #bbb);
         }
-
         .transaction-details {
-            font-size: 0.9rem;
-            opacity: 0.9;
-            line-height: 1.4;
+            font-size: 1.01rem;
+            opacity: 0.93;
+            line-height: 1.5;
+            color: var(--history-details, #e0e0e0);
+            margin-top: 2px;
         }
-
         .transaction-hash {
             font-family: monospace;
-            font-size: 0.8rem;
+            font-size: 0.93rem;
             word-break: break-all;
-            margin-top: 5px;
-            padding: 5px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 5px;
+            margin-top: 7px;
+            padding: 7px 8px;
+            background: var(--history-hash-bg, rgba(32,201,151,0.08));
+            border-radius: 7px;
+            color: #87CEEB;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .transaction-item.failed .transaction-hash {
+            background: var(--history-hash-failed-bg, rgba(244,67,54,0.10));
+            color: #ffb3b3;
+        }
+        .transaction-hash a {
+            color: #87CEEB;
+            text-decoration: underline;
+            transition: color 0.2s;
+        }
+        .transaction-hash a:hover {
+            color: #ffd700;
+        }
+        .wallet-scan-status {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--history-wallet-bg, rgba(36, 37, 38, 0.98));
+            color: var(--history-wallet-text, #fff);
+            padding: 36px 32px;
+            border-radius: 22px;
+            text-align: center;
+            font-size: 1.18rem;
+            box-shadow: 0 4px 18px rgba(36,37,38,0.18);
+            z-index: 2001;
+        }
+        .scan-message {
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            color: #ffd700;
         }
 
         .wallet-scan-status {
@@ -660,10 +728,8 @@
     </style>
 </head>
 <body>
-    <div class="theme-switcher">
-        <button id="themeDefault" class="active" onclick="setTheme('default')">Default</button>
-        <button id="themeLight" onclick="setTheme('light')">Light</button>
-        <button id="themeDark" onclick="setTheme('dark')">Dark</button>
+    <div class="theme-switcher" id="themeSwitcher">
+        <button id="themeToggle" onclick="toggleTheme()">🌙</button>
     </div>
     <div class="merchant-header">
         <img src="your-logo.png" alt="Merchant Logo" class="merchant-logo" />
@@ -679,16 +745,27 @@
         </div>
     <div id="toast" class="toast" role="alert"></div>
     <div id="onboardingModal" class="onboarding-modal" style="display:none;">
-        <div class="onboarding-content">
-            <h2>Welcome to NFC Payment Terminal</h2>
-            <ul>
-                <li>Enter the amount and tap <b>Charge</b>.</li>
-                <li>Ask the customer to tap their phone or card on the NFC reader.</li>
-                <li>Wait for confirmation or error message.</li>
-                <li>View transaction history with the <b>📜</b> button.</li>
-                <li>Scan a wallet to see its history, or show all transactions.</li>
-            </ul>
-            <button onclick="hideOnboarding()">Got it!</button>
+        <div class="onboarding-content" style="padding: 32px 18px; max-width: 340px;">
+            <img src="your-logo.png" alt="Merchant Logo" class="merchant-logo" style="display:block;margin:0 auto 12px auto;box-shadow:none;" />
+            <h2 style="font-size:1.4rem;margin-bottom:18px;color:#764ba2;letter-spacing:0.5px;">Quick Guide</h2>
+            <div style="display:flex;flex-direction:column;gap:18px;margin-bottom:22px;">
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <span style="font-size:2rem;">💵</span>
+                    <span style="font-size:1.05rem;">Enter amount & tap <b>Charge</b></span>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <span style="font-size:2rem;">📱</span>
+                    <span style="font-size:1.05rem;">Ask customer to tap phone/card</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <span style="font-size:2rem;">✅</span>
+                    <span style="font-size:1.05rem;">Wait for confirmation</span>
+                </div>
+            </div>
+            <div style="font-size:0.98rem;color:#888;margin-bottom:18px;">
+                <span style="font-size:1.2rem;vertical-align:middle;">📜</span> View history or scan wallet anytime
+            </div>
+            <button onclick="hideOnboarding()" style="width:100%;margin-top:0;font-size:1.1rem;">Start</button>
         </div>
     </div>
 
@@ -1013,27 +1090,71 @@
         function setTheme(theme) {
             const body = document.body;
             const root = document.documentElement;
-            document.getElementById('themeDefault').classList.remove('active');
-            document.getElementById('themeLight').classList.remove('active');
-            document.getElementById('themeDark').classList.remove('active');
-            if (theme === 'light') {
-                body.style.background = '#f8f9fa';
-                root.style.setProperty('--main-bg', '#f8f9fa');
-                root.style.setProperty('--main-gradient', '#fff');
-                root.style.setProperty('--main-text', '#333');
-                document.getElementById('themeLight').classList.add('active');
-            } else if (theme === 'dark') {
+            if (theme === 'dark') {
                 body.style.background = 'linear-gradient(135deg, #232526 0%, #414345 100%)';
                 root.style.setProperty('--main-bg', '#232526');
                 root.style.setProperty('--main-gradient', '#414345');
                 root.style.setProperty('--main-text', '#fff');
-                document.getElementById('themeDark').classList.add('active');
+                // History dark theme
+                root.style.setProperty('--history-bg', 'linear-gradient(135deg, #232526 0%, #414345 100%)');
+                root.style.setProperty('--history-text', '#fff');
+                root.style.setProperty('--history-header-bg', 'rgba(36, 37, 38, 0.92)');
+                root.style.setProperty('--history-header-text', '#fff');
+                root.style.setProperty('--history-border', 'rgba(255,255,255,0.08)');
+                root.style.setProperty('--history-controls-bg', 'rgba(36, 37, 38, 0.85)');
+                root.style.setProperty('--history-btn-bg', 'linear-gradient(135deg, #232526 0%, #764ba2 100%)');
+                root.style.setProperty('--history-btn-text', '#fff');
+                root.style.setProperty('--history-btn-hover-bg', 'linear-gradient(135deg, #764ba2 0%, #232526 100%)');
+                root.style.setProperty('--history-content-bg', 'linear-gradient(135deg, #232526 0%, #414345 100%)');
+                root.style.setProperty('--history-item-bg', 'linear-gradient(135deg, #2d2e30 0%, #3a3b3d 100%)');
+                root.style.setProperty('--history-item-failed-bg', 'linear-gradient(135deg, #3a2323 0%, #4a2d2d 100%)');
+                root.style.setProperty('--history-no-history', '#bbb');
+                root.style.setProperty('--history-time', '#bbb');
+                root.style.setProperty('--history-details', '#e0e0e0');
+                root.style.setProperty('--history-hash-bg', 'rgba(32,201,151,0.08)');
+                root.style.setProperty('--history-hash-failed-bg', 'rgba(244,67,54,0.10)');
+                root.style.setProperty('--history-wallet-bg', 'rgba(36, 37, 38, 0.98)');
+                root.style.setProperty('--history-wallet-text', '#fff');
+                document.getElementById('themeToggle').textContent = '☀️';
+                document.getElementById('themeToggle').classList.add('active');
+                localStorage.setItem('nfc-theme', 'dark');
             } else {
                 body.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                 root.style.setProperty('--main-bg', '#667eea');
                 root.style.setProperty('--main-gradient', '#764ba2');
                 root.style.setProperty('--main-text', '#fff');
-                document.getElementById('themeDefault').classList.add('active');
+                // History light theme
+                root.style.setProperty('--history-bg', 'linear-gradient(135deg, #f7f8fa 0%, #e6e7eb 100%)');
+                root.style.setProperty('--history-text', '#333');
+                root.style.setProperty('--history-header-bg', 'rgba(255,255,255,0.96)');
+                root.style.setProperty('--history-header-text', '#764ba2');
+                root.style.setProperty('--history-border', 'rgba(160,165,177,0.13)');
+                root.style.setProperty('--history-controls-bg', 'rgba(255,255,255,0.92)');
+                root.style.setProperty('--history-btn-bg', 'linear-gradient(135deg, #e6e7eb 0%, #d3d6df 100%)');
+                root.style.setProperty('--history-btn-text', '#764ba2');
+                root.style.setProperty('--history-btn-hover-bg', 'linear-gradient(135deg, #d3d6df 0%, #e6e7eb 100%)');
+                root.style.setProperty('--history-content-bg', 'linear-gradient(135deg, #f7f8fa 0%, #e6e7eb 100%)');
+                root.style.setProperty('--history-item-bg', 'linear-gradient(135deg, #fff 0%, #f4f5f8 100%)');
+                root.style.setProperty('--history-item-failed-bg', 'linear-gradient(135deg, #fff0f0 0%, #fbeaea 100%)');
+                root.style.setProperty('--history-no-history', '#888');
+                root.style.setProperty('--history-time', '#888');
+                root.style.setProperty('--history-details', '#4a4d57');
+                root.style.setProperty('--history-hash-bg', 'rgba(32,201,151,0.06)');
+                root.style.setProperty('--history-hash-failed-bg', 'rgba(244,67,54,0.06)');
+                root.style.setProperty('--history-wallet-bg', 'rgba(255,255,255,0.98)');
+                root.style.setProperty('--history-wallet-text', '#764ba2');
+                document.getElementById('themeToggle').textContent = '🌙';
+                document.getElementById('themeToggle').classList.remove('active');
+                localStorage.setItem('nfc-theme', 'default');
+            }
+        }
+
+        function toggleTheme() {
+            const current = localStorage.getItem('nfc-theme') || 'default';
+            if (current === 'dark') {
+                setTheme('default');
+            } else {
+                setTheme('dark');
             }
         }
 
@@ -1052,6 +1173,8 @@
                 showOnboarding();
                 localStorage.setItem('nfc-onboarded', '1');
             }
+            // Set theme from localStorage
+            setTheme(localStorage.getItem('nfc-theme') || 'default');
         });
 
         function resetUI() {
@@ -1194,11 +1317,15 @@
         // History functionality
         function showHistory() {
             document.getElementById('historyScreen').style.display = 'flex';
+            // Hide theme switcher while history is open to avoid overlap
+            document.getElementById('themeSwitcher').style.display = 'none';
             loadTransactionHistory();
         }
 
         function closeHistory() {
             document.getElementById('historyScreen').style.display = 'none';
+            // Restore theme switcher when history is closed
+            document.getElementById('themeSwitcher').style.display = 'block';
             isWalletScanMode = false;
             document.getElementById('walletScanStatus').style.display = 'none';
         }
@@ -1255,15 +1382,24 @@
 
         function displayTransactionHistory(transactions, walletAddress = null) {
             const historyList = document.getElementById('historyList');
-            
-            if (!transactions || transactions.length === 0) {
-                historyList.innerHTML = '<div class="no-history">No transactions yet</div>';
-                return;
-            }
 
-            let filteredTransactions = transactions;
+            // If no transactions, show a demo transaction
+            let txs = (transactions && transactions.length > 0) ? transactions : [
+                {
+                    timestamp: Date.now() - 1000 * 60 * 60 * 2, // 2 hours ago
+                    status: 'confirmed',
+                    amount: 12.34,
+                    chainName: 'DEMO',
+                    tokenSymbol: 'DEMO',
+                    fromAddress: '0xDEMO1234567890abcdef1234567890abcdef1234',
+                    txHash: '0xDEMOHASH1234567890abcdef1234567890abcdef1234567890abcdef',
+                    explorerUrl: 'https://etherscan.io/tx/0xDEMOHASH1234567890abcdef1234567890abcdef1234567890abcdef'
+                }
+            ];
+
+            let filteredTransactions = txs;
             if (walletAddress) {
-                filteredTransactions = transactions.filter(tx => 
+                filteredTransactions = txs.filter(tx =>
                     tx.fromAddress && tx.fromAddress.toLowerCase() === walletAddress.toLowerCase()
                 );
             }
@@ -1277,7 +1413,11 @@
                 const date = new Date(transaction.timestamp).toLocaleString();
                 const status = transaction.status === 'confirmed' ? 'confirmed' : 'failed';
                 const statusClass = status === 'confirmed' ? '' : 'failed';
-                
+                const chain = transaction.chainName || 'Unknown';
+                const token = transaction.tokenSymbol || 'Unknown';
+                const from = transaction.fromAddress ? `${transaction.fromAddress.slice(0, 6)}...${transaction.fromAddress.slice(-4)}` : 'Unknown';
+                const txHash = transaction.txHash ? `${transaction.txHash.slice(0, 10)}...${transaction.txHash.slice(-8)}` : '';
+                const explorerUrl = transaction.explorerUrl || '#';
                 return `
                     <div class="transaction-item ${statusClass}">
                         <div class="transaction-header">
@@ -1285,13 +1425,13 @@
                             <div class="transaction-time">${date}</div>
                         </div>
                         <div class="transaction-details">
-                            <div><strong>Chain:</strong> ${transaction.chainName || 'Unknown'}</div>
-                            <div><strong>Token:</strong> ${transaction.tokenSymbol || 'Unknown'}</div>
-                            <div><strong>From:</strong> ${transaction.fromAddress ? `${transaction.fromAddress.slice(0, 6)}...${transaction.fromAddress.slice(-4)}` : 'Unknown'}</div>
-                            <div><strong>Status:</strong> ${status}</div>
+                            <span style="display:inline-block;margin-right:10px;"><strong>Chain:</strong> <span style="color:#ffd700;">${chain}</span></span>
+                            <span style="display:inline-block;margin-right:10px;"><strong>Token:</strong> <span style="color:#20c997;">${token}</span></span>
+                            <span style="display:inline-block;"><strong>From:</strong> <span style="color:#87CEEB;">${from}</span></span>
+                            <span style="display:inline-block;margin-left:10px;"><strong>Status:</strong> <span style="color:${status === 'confirmed' ? '#20c997' : '#f44336'};text-transform:capitalize;">${status}</span></span>
                             ${transaction.txHash ? `
                                 <div class="transaction-hash">
-                                    <strong>TX:</strong> <a href="${transaction.explorerUrl || '#'}" target="_blank" style="color: #87CEEB;">${transaction.txHash.slice(0, 10)}...${transaction.txHash.slice(-8)}</a>
+                                    <span style="font-weight:600;">TX:</span> <a href="${explorerUrl}" target="_blank">${txHash}</a>
                                 </div>
                             ` : ''}
                         </div>
