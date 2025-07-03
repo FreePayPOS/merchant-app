@@ -4,6 +4,111 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NFC Payment Terminal</title>
+    <!-- Add a merchant logo and onboarding modal styles -->
+    <style>
+        .merchant-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+        .merchant-logo {
+            width: 96px;
+            height: 48px;
+            border-radius: 12px;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            object-fit: cover;
+        }
+        .merchant-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        }
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: 32px;
+            transform: translateX(-50%);
+            background: #222;
+            color: #fff;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 2000;
+        }
+        .toast.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .onboarding-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+        .onboarding-content {
+            background: #fff;
+            color: #333;
+            border-radius: 18px;
+            padding: 32px 28px;
+            max-width: 90vw;
+            width: 400px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+            text-align: center;
+        }
+        .onboarding-content h2 {
+            margin-bottom: 12px;
+        }
+        .onboarding-content ul {
+            text-align: left;
+            margin: 16px 0 24px 0;
+            padding-left: 18px;
+        }
+        .onboarding-content button {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            padding: 12px 32px;
+            cursor: pointer;
+            margin-top: 12px;
+        }
+        .onboarding-content button:hover {
+            background: linear-gradient(135deg, #20c997, #28a745);
+        }
+        .theme-switcher {
+            position: absolute;
+            top: 18px;
+            right: 24px;
+            z-index: 1200;
+        }
+        .theme-switcher button {
+            background: #fff;
+            color: #764ba2;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .theme-switcher button.active {
+            background: #764ba2;
+            color: #fff;
+        }
+    </style>
     <style>
         * {
             margin: 0;
@@ -19,7 +124,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #A0A5B1 0%, #d3d6df 100%);
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -29,9 +134,12 @@
         .container {
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            padding: 20px;
-            max-width: 100%;
+            min-height: 100vh;
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px 8px 32px 8px;
+            width: 100%;
+            box-sizing: border-box;
         }
 
 
@@ -39,62 +147,69 @@
 
 
         .display-section {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            background: #f4f5f8;
+            border-radius: 22px;
+            padding: 32px 16px;
+            margin-bottom: 22px;
+            box-shadow: 0 10px 32px rgba(160, 165, 177, 0.13);
         }
 
         .amount-display {
             text-align: center;
-            font-size: 4rem;
+            font-size: clamp(2.2rem, 7vw, 4rem);
             font-weight: bold;
-            color: #333;
-            min-height: 80px;
+            color: #4a4d57;
+            min-height: 60px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 3px dashed #ddd;
-            border-radius: 15px;
-            background: #f8f9fa;
+            border: 3px dashed #A0A5B1;
+            border-radius: 18px;
+            background: #f4f5f8;
+            box-shadow: 0 2px 12px rgba(160, 165, 177, 0.08);
         }
 
         .amount-display.has-value {
-            border-color: #28a745;
-            background: #f8fff9;
-            color: #28a745;
+            border-color: #4a4d57;
+            background: #e6e7eb;
+            color: #4a4d57;
         }
 
         .keypad {
-            flex: 1;
+            flex: 1 0 auto;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             grid-template-rows: repeat(4, 1fr);
-            gap: 15px;
+            gap: 12px;
             margin-bottom: 20px;
+            width: 100%;
+            max-width: 420px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .key {
-            background: rgba(255, 255, 255, 0.9);
+            background: #e6e7eb;
             border: none;
-            border-radius: 15px;
-            font-size: 2.5rem;
+            border-radius: 16px;
+            font-size: clamp(1.3rem, 5vw, 2.5rem);
             font-weight: bold;
-            color: #333;
+            color: #4a4d57;
             cursor: pointer;
             transition: all 0.2s ease;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 5px 15px rgba(160, 165, 177, 0.10);
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 80px;
+            min-height: 56px;
+            height: 10vw;
+            max-height: 80px;
         }
 
         .key:hover {
-            background: rgba(255, 255, 255, 1);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            background: #d3d6df;
+            transform: translateY(-2px) scale(1.04);
+            box-shadow: 0 8px 25px rgba(160, 165, 177, 0.16);
         }
 
         .key:active {
@@ -103,13 +218,13 @@
         }
 
         .key.clear {
-            background: rgba(220, 53, 69, 0.9);
-            color: white;
+            background: #A0A5B1;
+            color: #fff;
             font-size: 1.8rem;
         }
 
         .key.clear:hover {
-            background: rgba(220, 53, 69, 1);
+            background: #4a4d57;
         }
 
         .key.decimal {
@@ -122,27 +237,31 @@
         }
 
         .done-button {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            color: white;
+            background: linear-gradient(135deg, #A0A5B1 0%, #4a4d57 100%);
+            color: #fff;
             border: none;
-            border-radius: 20px;
-            font-size: 2rem;
+            border-radius: 22px;
+            font-size: clamp(1.1rem, 4vw, 2rem);
             font-weight: bold;
-            padding: 25px;
+            padding: 18px 0;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 10px 30px rgba(40, 167, 69, 0.3);
+            box-shadow: 0 10px 30px rgba(160, 165, 177, 0.18);
             text-transform: uppercase;
             letter-spacing: 2px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 15px;
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto 0 auto;
         }
 
         .done-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(40, 167, 69, 0.4);
+            background: linear-gradient(135deg, #4a4d57 0%, #A0A5B1 100%);
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 18px 50px rgba(160, 165, 177, 0.22);
         }
 
         .done-button:active {
@@ -150,15 +269,16 @@
         }
 
         .done-button:disabled {
-            background: #6c757d;
+            background: #d3d6df;
+            color: #fff;
             cursor: not-allowed;
             transform: none;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 5px 15px rgba(160, 165, 177, 0.10);
         }
 
         .done-button.disconnected {
-            background: linear-gradient(135deg, #ffc107, #fd7e14);
-            box-shadow: 0 10px 30px rgba(255, 193, 7, 0.3);
+            background: linear-gradient(135deg, #bfc2cc 0%, #A0A5B1 100%);
+            box-shadow: 0 10px 30px rgba(160, 165, 177, 0.18);
             cursor: not-allowed;
             animation: pulse-warning 2s infinite;
         }
@@ -188,29 +308,32 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #A0A5B1 0%, #d3d6df 100%);
             display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 1000;
-            color: white;
+            color: #4a4d57;
             text-align: center;
-            padding: 40px;
+            padding: 4vw 2vw;
+            box-sizing: border-box;
         }
 
         .nfc-screen.waiting-payment {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(135deg, #A0A5B1 0%, #d3d6df 100%);
         }
 
         .nfc-screen.payment-approved {
-            background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
+            background: linear-gradient(135deg, #4a4d57 0%, #A0A5B1 100%);
+            color: #fff;
         }
 
         .nfc-screen.error {
-            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            background: linear-gradient(135deg, #bfc2cc 0%, #A0A5B1 100%);
+            color: #fff;
         }
 
         .nfc-icon {
@@ -220,7 +343,7 @@
         }
 
         .nfc-message {
-            font-size: 2.5rem;
+            font-size: clamp(1.3rem, 5vw, 2.5rem);
             font-weight: bold;
             margin-bottom: 20px;
         }
@@ -232,10 +355,10 @@
         }
 
         .nfc-amount {
-            font-size: 3rem;
+            font-size: clamp(1.2rem, 6vw, 3rem);
             font-weight: bold;
             background: rgba(255, 255, 255, 0.2);
-            padding: 20px 40px;
+            padding: 16px 24px;
             border-radius: 15px;
             margin-bottom: 30px;
         }
@@ -280,7 +403,7 @@
 
         /* Success Screen */
         .success-screen {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            background: linear-gradient(135deg, #4a4d57 0%, #A0A5B1 100%);
         }
 
         .success-icon {
@@ -326,7 +449,7 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
+            width: 100vw;
             height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -334,6 +457,8 @@
             flex-direction: column;
             z-index: 1000;
             overflow: hidden;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         .history-header {
@@ -471,22 +596,39 @@
 
         /* Responsive adjustments for 5" screen */
         @media (max-width: 600px) and (max-height: 400px) {
-            .container { padding: 15px; }
+            .container { padding: 8px; }
             .header h1 { font-size: 2rem; }
             .header p { font-size: 1rem; }
-            .amount-display { font-size: 3rem; min-height: 60px; }
-            .key { font-size: 2rem; min-height: 60px; }
-            .done-button { font-size: 1.5rem; padding: 20px; }
-            .nfc-message { font-size: 2rem; }
-            .nfc-amount { font-size: 2.5rem; }
-            .history-header h2 { font-size: 1.4rem; }
-            .scan-wallet-button, .show-all-button { font-size: 0.9rem; padding: 12px 15px; }
-            .cancel-button { font-size: 3rem; min-height: 60px; }
+            .amount-display { font-size: 2.2rem; min-height: 48px; }
+            .key { font-size: 1.3rem; min-height: 44px; }
+            .done-button { font-size: 1.1rem; padding: 12px; }
+            .nfc-message { font-size: 1.3rem; }
+            .nfc-amount { font-size: 1.2rem; }
+            .history-header h2 { font-size: 1.1rem; }
+            .scan-wallet-button, .show-all-button { font-size: 0.8rem; padding: 8px 10px; }
+            .cancel-button { font-size: 2rem; min-height: 44px; }
+        }
+
+        @media (min-width: 700px) {
+            .container {
+                max-width: 540px;
+                padding: 32px 0 48px 0;
+            }
+            .display-section {
+                padding: 40px 32px;
+            }
+            .keypad {
+                gap: 18px;
+                max-width: 480px;
+            }
+            .done-button {
+                max-width: 480px;
+            }
         }
 
         .cancel-button {
-            background: #dc3545;
-            color: white;
+            background: #A0A5B1;
+            color: #fff;
             border: none;
             border-radius: 15px;
             padding: 20px 40px;
@@ -498,70 +640,135 @@
             width: 100%;
             max-width: 400px;
             transition: all 0.2s ease;
-            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+            box-shadow: 0 4px 8px rgba(160, 165, 177, 0.13);
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
         .cancel-button:hover {
-            background: #c82333;
+            background: #4a4d57;
             transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(220, 53, 69, 0.4);
+            box-shadow: 0 6px 12px rgba(160, 165, 177, 0.18);
         }
 
         .cancel-button:active {
             transform: translateY(0);
-            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+            box-shadow: 0 2px 4px rgba(160, 165, 177, 0.10);
         }
     </style>
 </head>
 <body>
+    <div class="theme-switcher">
+        <button id="themeDefault" class="active" onclick="setTheme('default')">Default</button>
+        <button id="themeLight" onclick="setTheme('light')">Light</button>
+        <button id="themeDark" onclick="setTheme('dark')">Dark</button>
+    </div>
+    <div class="merchant-header">
+        <img src="your-logo.png" alt="Merchant Logo" class="merchant-logo" />
+    </div>
     <div class="container">
 
         <div class="display-section">
-            <div class="amount-display" id="amountDisplay">$0.00</div>
+            <div class="amount-display" id="amountDisplay" title="Enter the amount to charge">$0.00</div>
+            <div style="text-align:center; margin-top:8px; color:#888; font-size:1rem;">
+                Enter the amount to charge, then tap <b>Charge</b>.<br>
+                <span style="font-size:0.95rem; color:#aaa;">Need help? <a href="#" onclick="showOnboarding();return false;">See quick guide</a></span>
+            </div>
+        </div>
+    <div id="toast" class="toast" role="alert"></div>
+    <div id="onboardingModal" class="onboarding-modal" style="display:none;">
+        <div class="onboarding-content">
+            <h2>Welcome to NFC Payment Terminal</h2>
+            <ul>
+                <li>Enter the amount and tap <b>Charge</b>.</li>
+                <li>Ask the customer to tap their phone or card on the NFC reader.</li>
+                <li>Wait for confirmation or error message.</li>
+                <li>View transaction history with the <b>📜</b> button.</li>
+                <li>Scan a wallet to see its history, or show all transactions.</li>
+            </ul>
+            <button onclick="hideOnboarding()">Got it!</button>
+        </div>
+    </div>
+
+        <div class="keypad" aria-label="Number pad">
+            <button class="key" onclick="addDigit('1')" aria-label="1">1</button>
+            <button class="key" onclick="addDigit('2')" aria-label="2">2</button>
+            <button class="key" onclick="addDigit('3')" aria-label="3">3</button>
+            <button class="key" onclick="addDigit('4')" aria-label="4">4</button>
+            <button class="key" onclick="addDigit('5')" aria-label="5">5</button>
+            <button class="key" onclick="addDigit('6')" aria-label="6">6</button>
+            <button class="key" onclick="addDigit('7')" aria-label="7">7</button>
+            <button class="key" onclick="addDigit('8')" aria-label="8">8</button>
+            <button class="key" onclick="addDigit('9')" aria-label="9">9</button>
+            <button class="key history" onclick="showHistory()" aria-label="Show transaction history" title="Show transaction history">📜</button>
+            <button class="key" onclick="addDigit('0')" aria-label="0">0</button>
+            <button class="key clear" onclick="clearAmount()" aria-label="Clear amount" title="Clear amount">Clear</button>
         </div>
 
-        <div class="keypad">
-            <button class="key" onclick="addDigit('1')">1</button>
-            <button class="key" onclick="addDigit('2')">2</button>
-            <button class="key" onclick="addDigit('3')">3</button>
-            <button class="key" onclick="addDigit('4')">4</button>
-            <button class="key" onclick="addDigit('5')">5</button>
-            <button class="key" onclick="addDigit('6')">6</button>
-            <button class="key" onclick="addDigit('7')">7</button>
-            <button class="key" onclick="addDigit('8')">8</button>
-            <button class="key" onclick="addDigit('9')">9</button>
-            <button class="key history" onclick="showHistory()">📜</button>
-            <button class="key" onclick="addDigit('0')">0</button>
-            <button class="key clear" onclick="clearAmount()">Clear</button>
-        </div>
-
-        <button class="done-button" id="doneButton" onclick="startPayment()">
+        <button class="done-button" id="doneButton" onclick="startPayment()" aria-label="Charge customer">
             <span class="disconnect-icon" id="disconnectIcon">📡❌</span>
             Charge
         </button>
     </div>
 
     <!-- NFC Status Screens -->
-    <div class="nfc-screen" id="nfcScreen">
-        <div class="spinner"></div>
-        <div class="checkmark" style="display: none;"></div>
-        <div class="nfc-message">Waiting for tap</div>
-        <div class="nfc-submessage">
-            Hold your phone near the NFC reader<br>
+        <div class="nfc-screen" id="nfcScreen">
+            <div class="nfc-animated-icon" aria-label="Waiting for NFC tap" title="Waiting for NFC tap">
+                <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle class="nfc-wave nfc-wave1" cx="40" cy="40" r="24" stroke="#A0A5B1" stroke-width="3" />
+                  <circle class="nfc-wave nfc-wave2" cx="40" cy="40" r="32" stroke="#A0A5B1" stroke-width="2" />
+                  <path d="M52 40c0-6.627-5.373-12-12-12s-12 5.373-12 12" stroke="#4a4d57" stroke-width="3" stroke-linecap="round" fill="none"/>
+                  <rect x="36" y="28" width="8" height="24" rx="4" fill="#4a4d57"/>
+                  <rect x="38.5" y="20" width="3" height="8" rx="1.5" fill="#A0A5B1"/>
+                </svg>
+            </div>
+            <div class="checkmark" style="display: none;"></div>
+            <div class="nfc-message">Waiting for tap</div>
+            <div class="nfc-submessage">
+                Hold your phone near the NFC reader<br>
+                <span style="font-size:0.95rem; color:#e0e0e0;">Make sure your device stays steady during the process.</span>
+            </div>
+            <div class="nfc-amount" id="nfcAmount">$0.00</div>
+            <button class="cancel-button" onclick="cancelTransaction()" aria-label="Cancel transaction">Cancel</button>
+        .nfc-animated-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 18px;
+            width: 80px;
+            height: 80px;
+            position: relative;
+        }
+        .nfc-wave {
+            stroke-opacity: 0.5;
+            fill: none;
+            transform-origin: 40px 40px;
+        }
+        .nfc-wave1 {
+            animation: nfc-wave1-pulse 1.8s infinite cubic-bezier(0.4,0,0.2,1);
+        }
+        .nfc-wave2 {
+            animation: nfc-wave2-pulse 1.8s infinite cubic-bezier(0.4,0,0.2,1) 0.5s;
+        }
+        @keyframes nfc-wave1-pulse {
+            0% { stroke-opacity: 0.5; transform: scale(1); }
+            70% { stroke-opacity: 0; transform: scale(1.4); }
+            100% { stroke-opacity: 0; transform: scale(1.4); }
+        }
+        @keyframes nfc-wave2-pulse {
+            0% { stroke-opacity: 0.3; transform: scale(1); }
+            70% { stroke-opacity: 0; transform: scale(1.7); }
+            100% { stroke-opacity: 0; transform: scale(1.7); }
+        }
         </div>
-        <div class="nfc-amount" id="nfcAmount">$0.00</div>
-        <button class="cancel-button" onclick="cancelTransaction()">Cancel</button>
-    </div>
 
-    <div class="nfc-screen error" id="errorScreen" style="display: none;">
-        <div class="nfc-icon">⚠️</div>
-        <div class="nfc-message">Phone Moved Too Quickly</div>
-        <div class="nfc-submessage">Please try again</div>
-        <button class="retry-button" onclick="retryPayment()">Try Again</button>
-    </div>
+        <div class="nfc-screen error" id="errorScreen" style="display: none;">
+            <div class="nfc-icon">⚠️</div>
+            <div class="nfc-message">Phone Moved Too Quickly</div>
+            <div class="nfc-submessage">Please try again</div>
+            <button class="retry-button" onclick="retryPayment()" aria-label="Try payment again">Try Again</button>
+        </div>
 
     <div class="nfc-screen success-screen" id="successScreen" style="display: none;">
         <div class="success-icon">✅</div>
@@ -579,10 +786,10 @@
         </div>
         
         <div class="history-controls">
-            <button class="scan-wallet-button" onclick="scanWallet()">
+        <button class="scan-wallet-button" onclick="scanWallet()" aria-label="Scan wallet for history" title="Scan a wallet to view its transaction history">
                 📱 Scan Wallet for History
             </button>
-            <button class="show-all-button" onclick="showAllHistory()">
+            <button class="show-all-button" onclick="showAllHistory()" aria-label="Show all transactions" title="Show all transactions for this terminal">
                 📊 Show All Transactions
             </button>
         </div>
@@ -767,28 +974,84 @@
             const spinner = nfcScreen.querySelector('.spinner');
             const checkmark = nfcScreen.querySelector('.checkmark');
             const cancelButton = nfcScreen.querySelector('.cancel-button');
-            
             nfcScreen.style.display = 'flex';
             nfcScreen.classList.add('error');
             nfcScreen.classList.remove('waiting-payment', 'payment-approved');
             nfcMessage.textContent = message;
-            
-            // Hide the NFC reader instruction message during error
             nfcSubmessage.style.display = 'none';
-            
             spinner.style.display = 'none';
             checkmark.style.display = 'none';
-            cancelButton.style.display = 'none'; // Hide cancel button on error
-            
-            // Clear the timeout
+            cancelButton.style.display = 'none';
             if (paymentTimeout) clearTimeout(paymentTimeout);
-            
-            // Return to main screen after 5 seconds
+            showToast(message, true);
             setTimeout(() => {
                 nfcScreen.style.display = 'none';
                 resetUI();
             }, 5000);
         }
+        // Toast notification for errors and actions
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.background = isError ? '#c82333' : '#222';
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3500);
+        }
+
+        // Onboarding modal
+        function showOnboarding() {
+            document.getElementById('onboardingModal').style.display = 'flex';
+        }
+        function hideOnboarding() {
+            document.getElementById('onboardingModal').style.display = 'none';
+        }
+
+        // Theme switcher
+        function setTheme(theme) {
+            const body = document.body;
+            const root = document.documentElement;
+            document.getElementById('themeDefault').classList.remove('active');
+            document.getElementById('themeLight').classList.remove('active');
+            document.getElementById('themeDark').classList.remove('active');
+            if (theme === 'light') {
+                body.style.background = '#f8f9fa';
+                root.style.setProperty('--main-bg', '#f8f9fa');
+                root.style.setProperty('--main-gradient', '#fff');
+                root.style.setProperty('--main-text', '#333');
+                document.getElementById('themeLight').classList.add('active');
+            } else if (theme === 'dark') {
+                body.style.background = 'linear-gradient(135deg, #232526 0%, #414345 100%)';
+                root.style.setProperty('--main-bg', '#232526');
+                root.style.setProperty('--main-gradient', '#414345');
+                root.style.setProperty('--main-text', '#fff');
+                document.getElementById('themeDark').classList.add('active');
+            } else {
+                body.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                root.style.setProperty('--main-bg', '#667eea');
+                root.style.setProperty('--main-gradient', '#764ba2');
+                root.style.setProperty('--main-text', '#fff');
+                document.getElementById('themeDefault').classList.add('active');
+            }
+        }
+
+        // Accessibility: focus style for all buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('focus', function() {
+                    this.style.outline = '2px solid #20c997';
+                });
+                btn.addEventListener('blur', function() {
+                    this.style.outline = '';
+                });
+            });
+            // Show onboarding for first-time users
+            if (!localStorage.getItem('nfc-onboarded')) {
+                showOnboarding();
+                localStorage.setItem('nfc-onboarded', '1');
+            }
+        });
 
         function resetUI() {
             const nfcScreen = document.getElementById('nfcScreen');
