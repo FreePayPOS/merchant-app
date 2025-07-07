@@ -4,6 +4,115 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NFC Payment Terminal</title>
+    <!-- Add a merchant logo and onboarding modal styles -->
+    <style>
+        .merchant-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+        .merchant-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 40%; /* More square than circle, crops more from corners */
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            object-fit: cover;
+            object-position: center;
+            border: .5px solid #fff; /* Thicker border crops more from the edge */
+            padding: 0px;
+        }
+        .merchant-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        }
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: 32px;
+            transform: translateX(-50%);
+            background: #222;
+            color: #fff;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 2000;
+        }
+        .toast.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .onboarding-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+        .onboarding-content {
+            background: #fff;
+            color: #333;
+            border-radius: 18px;
+            padding: 32px 28px;
+            max-width: 90vw;
+            width: 400px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+            text-align: center;
+        }
+        .onboarding-content h2 {
+            margin-bottom: 12px;
+        }
+        .onboarding-content ul {
+            text-align: left;
+            margin: 16px 0 24px 0;
+            padding-left: 18px;
+        }
+        .onboarding-content button {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            padding: 12px 32px;
+            cursor: pointer;
+            margin-top: 12px;
+        }
+        .onboarding-content button:hover {
+            background: linear-gradient(135deg, #20c997, #28a745);
+        }
+        .theme-switcher {
+            position: fixed;
+            top: 18px;
+            right: 24px;
+            z-index: 4000;
+            pointer-events: auto;
+        }
+        .theme-switcher button {
+            background: #fff;
+            color: #764ba2;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .theme-switcher button.active {
+            background: #764ba2;
+            color: #fff;
+        }
+    </style>
     <style>
         * {
             margin: 0;
@@ -19,19 +128,23 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            background: linear-gradient(135deg, #A0A5B1 0%, #d3d6df 100%);
+            min-height: 100vh;
+            /* Remove overflow: hidden to allow .container to control scroll */
         }
 
         .container {
             display: flex;
             flex-direction: column;
+            justify-content: flex-start;
+            align-items: stretch;
             height: 100vh;
-            padding: 20px;
-            max-width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 8px 4px 8px 4px;
+            width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
         }
 
 
@@ -39,62 +152,69 @@
 
 
         .display-section {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            background: #f4f5f8;
+            border-radius: 18px;
+            padding: 16px 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 16px rgba(160, 165, 177, 0.10);
         }
 
         .amount-display {
             text-align: center;
-            font-size: 4rem;
+            font-size: clamp(2.2rem, 7vw, 4rem);
             font-weight: bold;
-            color: #333;
-            min-height: 80px;
+            color: #4a4d57;
+            min-height: 60px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 3px dashed #ddd;
-            border-radius: 15px;
-            background: #f8f9fa;
+            border: 3px dashed #A0A5B1;
+            border-radius: 18px;
+            background: #f4f5f8;
+            box-shadow: 0 2px 12px rgba(160, 165, 177, 0.08);
         }
 
         .amount-display.has-value {
-            border-color: #28a745;
-            background: #f8fff9;
-            color: #28a745;
+            border-color: #4a4d57;
+            background: #e6e7eb;
+            color: #4a4d57;
         }
 
         .keypad {
-            flex: 1;
+            flex: 0 0 auto;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             grid-template-rows: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: 8px;
+            margin-bottom: 10px;
+            width: 100%;
+            max-width: 420px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .key {
-            background: rgba(255, 255, 255, 0.9);
+            background: #e6e7eb;
             border: none;
-            border-radius: 15px;
-            font-size: 2.5rem;
+            border-radius: 16px;
+            font-size: clamp(1.3rem, 5vw, 2.5rem);
             font-weight: bold;
-            color: #333;
+            color: #4a4d57;
             cursor: pointer;
             transition: all 0.2s ease;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 5px 15px rgba(160, 165, 177, 0.10);
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 80px;
+            min-height: 56px;
+            height: 10vw;
+            max-height: 80px;
         }
 
         .key:hover {
-            background: rgba(255, 255, 255, 1);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            background: #d3d6df;
+            transform: translateY(-2px) scale(1.04);
+            box-shadow: 0 8px 25px rgba(160, 165, 177, 0.16);
         }
 
         .key:active {
@@ -103,13 +223,13 @@
         }
 
         .key.clear {
-            background: rgba(220, 53, 69, 0.9);
-            color: white;
+            background: #A0A5B1;
+            color: #fff;
             font-size: 1.8rem;
         }
 
         .key.clear:hover {
-            background: rgba(220, 53, 69, 1);
+            background: #4a4d57;
         }
 
         .key.decimal {
@@ -122,27 +242,31 @@
         }
 
         .done-button {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            color: white;
+            background: linear-gradient(135deg, #A0A5B1 0%, #4a4d57 100%);
+            color: #fff;
             border: none;
-            border-radius: 20px;
-            font-size: 2rem;
+            border-radius: 18px;
+            font-size: clamp(1.1rem, 4vw, 1.5rem);
             font-weight: bold;
-            padding: 25px;
+            padding: 12px 0;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 10px 30px rgba(40, 167, 69, 0.3);
+            box-shadow: 0 6px 18px rgba(160, 165, 177, 0.14);
             text-transform: uppercase;
             letter-spacing: 2px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
+            gap: 10px;
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto 0 auto;
         }
 
         .done-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(40, 167, 69, 0.4);
+            background: linear-gradient(135deg, #4a4d57 0%, #A0A5B1 100%);
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 18px 50px rgba(160, 165, 177, 0.22);
         }
 
         .done-button:active {
@@ -150,15 +274,16 @@
         }
 
         .done-button:disabled {
-            background: #6c757d;
+            background: #d3d6df;
+            color: #fff;
             cursor: not-allowed;
             transform: none;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 5px 15px rgba(160, 165, 177, 0.10);
         }
 
         .done-button.disconnected {
-            background: linear-gradient(135deg, #ffc107, #fd7e14);
-            box-shadow: 0 10px 30px rgba(255, 193, 7, 0.3);
+            background: linear-gradient(135deg, #bfc2cc 0%, #A0A5B1 100%);
+            box-shadow: 0 10px 30px rgba(160, 165, 177, 0.18);
             cursor: not-allowed;
             animation: pulse-warning 2s infinite;
         }
@@ -188,29 +313,32 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #A0A5B1 0%, #d3d6df 100%);
             display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 1000;
-            color: white;
+            color: #4a4d57;
             text-align: center;
-            padding: 40px;
+            padding: 4vw 2vw;
+            box-sizing: border-box;
         }
 
         .nfc-screen.waiting-payment {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(135deg, #A0A5B1 0%, #d3d6df 100%);
         }
 
         .nfc-screen.payment-approved {
-            background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
+            background: linear-gradient(135deg, #4a4d57 0%, #A0A5B1 100%);
+            color: #fff;
         }
 
         .nfc-screen.error {
-            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            background: linear-gradient(135deg, #bfc2cc 0%, #A0A5B1 100%);
+            color: #fff;
         }
 
         .nfc-icon {
@@ -220,7 +348,7 @@
         }
 
         .nfc-message {
-            font-size: 2.5rem;
+            font-size: clamp(1.3rem, 5vw, 2.5rem);
             font-weight: bold;
             margin-bottom: 20px;
         }
@@ -232,10 +360,10 @@
         }
 
         .nfc-amount {
-            font-size: 3rem;
+            font-size: clamp(1.2rem, 6vw, 3rem);
             font-weight: bold;
             background: rgba(255, 255, 255, 0.2);
-            padding: 20px 40px;
+            padding: 16px 24px;
             border-radius: 15px;
             margin-bottom: 30px;
         }
@@ -280,7 +408,7 @@
 
         /* Success Screen */
         .success-screen {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            background: linear-gradient(135deg, #4a4d57 0%, #A0A5B1 100%);
         }
 
         .success-icon {
@@ -322,134 +450,200 @@
         }
 
         /* History Screen Styles */
+
         .history-screen {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
+            width: 100vw;
             height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: var(--history-bg, linear-gradient(135deg, #232526 0%, #414345 100%));
+            color: var(--history-text, #fff);
             display: flex;
             flex-direction: column;
             z-index: 1000;
             overflow: hidden;
+            padding: 0;
+            box-sizing: border-box;
+            animation: fadeInHistory 0.5s cubic-bezier(0.4,0,0.2,1);
         }
-
+        @keyframes fadeInHistory {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
         .history-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 24px 28px 18px 28px;
+            border-bottom: 1px solid var(--history-border, rgba(255,255,255,0.08));
+            background: var(--history-header-bg, rgba(36, 37, 38, 0.92));
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
         }
-
         .history-header h2 {
             margin: 0;
-            font-size: 1.8rem;
+            font-size: 2.1rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: var(--history-header-text, #fff);
+            text-shadow: 0 2px 8px rgba(0,0,0,0.13);
         }
-
         .close-button {
-            background: rgba(255, 255, 255, 0.2);
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
             border: none;
-            color: white;
-            font-size: 1.5rem;
-            width: 40px;
-            height: 40px;
+            color: #fff;
+            font-size: 1.6rem;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             cursor: pointer;
-            transition: background 0.3s ease;
+            transition: background 0.3s, transform 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.10);
         }
-
         .close-button:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transform: scale(1.08);
         }
-
         .history-controls {
-            padding: 20px;
+            padding: 18px 28px 10px 28px;
             display: flex;
-            gap: 15px;
+            gap: 18px;
             flex-wrap: wrap;
+            background: var(--history-controls-bg, rgba(36, 37, 38, 0.85));
         }
-
         .scan-wallet-button, .show-all-button {
             flex: 1;
-            min-width: 200px;
-            padding: 15px 20px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid white;
-            color: white;
-            border-radius: 15px;
-            font-size: 1rem;
+            min-width: 160px;
+            padding: 13px 0;
+            background: var(--history-btn-bg, linear-gradient(135deg, #232526 0%, #764ba2 100%));
+            border: none;
+            color: var(--history-btn-text, #fff);
+            border-radius: 13px;
+            font-size: 1.08rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+            transition: background 0.2s, color 0.2s, transform 0.18s;
+            outline: none;
         }
-
         .scan-wallet-button:hover, .show-all-button:hover {
-            background: white;
-            color: #333;
+            background: var(--history-btn-hover-bg, linear-gradient(135deg, #764ba2 0%, #232526 100%));
+            color: #ffd700;
+            transform: translateY(-2px) scale(1.04);
         }
-
         .history-content {
             flex: 1;
-            padding: 0 20px;
+            padding: 0 0 0 0;
             overflow-y: auto;
+            background: var(--history-content-bg, linear-gradient(135deg, #232526 0%, #414345 100%));
         }
-
         .history-list {
             max-height: 100%;
+            padding: 18px 18px 32px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
         }
-
         .no-history {
             text-align: center;
-            padding: 40px;
+            padding: 60px 0 40px 0;
             opacity: 0.7;
-            font-size: 1.2rem;
+            font-size: 1.25rem;
+            color: var(--history-no-history, #bbb);
         }
-
         .transaction-item {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-left: 4px solid #4CAF50;
+            background: var(--history-item-bg, linear-gradient(135deg, #2d2e30 0%, #3a3b3d 100%));
+            border-radius: 18px;
+            padding: 18px 18px 14px 18px;
+            margin-bottom: 0;
+            border-left: 5px solid #20c997;
+            box-shadow: 0 4px 18px rgba(36,37,38,0.13);
+            transition: box-shadow 0.2s, transform 0.18s;
+            position: relative;
+            overflow: hidden;
+            animation: fadeInTransaction 0.5s cubic-bezier(0.4,0,0.2,1);
         }
-
+        @keyframes fadeInTransaction {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
         .transaction-item.failed {
             border-left-color: #f44336;
+            background: var(--history-item-failed-bg, linear-gradient(135deg, #3a2323 0%, #4a2d2d 100%));
         }
-
         .transaction-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 10px;
         }
-
         .transaction-amount {
-            font-size: 1.4rem;
-            font-weight: bold;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #20c997;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 8px rgba(32,201,151,0.08);
         }
-
+        .transaction-item.failed .transaction-amount {
+            color: #f44336;
+            text-shadow: 0 2px 8px rgba(244,67,54,0.10);
+        }
         .transaction-time {
-            font-size: 0.9rem;
-            opacity: 0.8;
+            font-size: 1.01rem;
+            opacity: 0.7;
+            font-weight: 500;
+            color: var(--history-time, #bbb);
         }
-
         .transaction-details {
-            font-size: 0.9rem;
-            opacity: 0.9;
-            line-height: 1.4;
+            font-size: 1.01rem;
+            opacity: 0.93;
+            line-height: 1.5;
+            color: var(--history-details, #e0e0e0);
+            margin-top: 2px;
         }
-
         .transaction-hash {
             font-family: monospace;
-            font-size: 0.8rem;
+            font-size: 0.93rem;
             word-break: break-all;
-            margin-top: 5px;
-            padding: 5px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 5px;
+            margin-top: 7px;
+            padding: 7px 8px;
+            background: var(--history-hash-bg, rgba(32,201,151,0.08));
+            border-radius: 7px;
+            color: #87CEEB;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .transaction-item.failed .transaction-hash {
+            background: var(--history-hash-failed-bg, rgba(244,67,54,0.10));
+            color: #ffb3b3;
+        }
+        .transaction-hash a {
+            color: #87CEEB;
+            text-decoration: underline;
+            transition: color 0.2s;
+        }
+        .transaction-hash a:hover {
+            color: #ffd700;
+        }
+        .wallet-scan-status {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--history-wallet-bg, rgba(36, 37, 38, 0.98));
+            color: var(--history-wallet-text, #fff);
+            padding: 36px 32px;
+            border-radius: 22px;
+            text-align: center;
+            font-size: 1.18rem;
+            box-shadow: 0 4px 18px rgba(36,37,38,0.18);
+            z-index: 2001;
+        }
+        .scan-message {
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            color: #ffd700;
         }
 
         .wallet-scan-status {
@@ -471,22 +665,39 @@
 
         /* Responsive adjustments for 5" screen */
         @media (max-width: 600px) and (max-height: 400px) {
-            .container { padding: 15px; }
+            .container { padding: 8px; }
             .header h1 { font-size: 2rem; }
             .header p { font-size: 1rem; }
-            .amount-display { font-size: 3rem; min-height: 60px; }
-            .key { font-size: 2rem; min-height: 60px; }
-            .done-button { font-size: 1.5rem; padding: 20px; }
-            .nfc-message { font-size: 2rem; }
-            .nfc-amount { font-size: 2.5rem; }
-            .history-header h2 { font-size: 1.4rem; }
-            .scan-wallet-button, .show-all-button { font-size: 0.9rem; padding: 12px 15px; }
-            .cancel-button { font-size: 3rem; min-height: 60px; }
+            .amount-display { font-size: 2.2rem; min-height: 48px; }
+            .key { font-size: 1.3rem; min-height: 44px; }
+            .done-button { font-size: 1.1rem; padding: 12px; }
+            .nfc-message { font-size: 1.3rem; }
+            .nfc-amount { font-size: 1.2rem; }
+            .history-header h2 { font-size: 1.1rem; }
+            .scan-wallet-button, .show-all-button { font-size: 0.8rem; padding: 8px 10px; }
+            .cancel-button { font-size: 2rem; min-height: 44px; }
+        }
+
+        @media (min-width: 700px) {
+            .container {
+                max-width: 540px;
+                padding: 32px 0 48px 0;
+            }
+            .display-section {
+                padding: 40px 32px;
+            }
+            .keypad {
+                gap: 18px;
+                max-width: 480px;
+            }
+            .done-button {
+                max-width: 480px;
+            }
         }
 
         .cancel-button {
-            background: #dc3545;
-            color: white;
+            background: #A0A5B1;
+            color: #fff;
             border: none;
             border-radius: 15px;
             padding: 20px 40px;
@@ -498,70 +709,144 @@
             width: 100%;
             max-width: 400px;
             transition: all 0.2s ease;
-            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+            box-shadow: 0 4px 8px rgba(160, 165, 177, 0.13);
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
         .cancel-button:hover {
-            background: #c82333;
+            background: #4a4d57;
             transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(220, 53, 69, 0.4);
+            box-shadow: 0 6px 12px rgba(160, 165, 177, 0.18);
         }
 
         .cancel-button:active {
             transform: translateY(0);
-            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+            box-shadow: 0 2px 4px rgba(160, 165, 177, 0.10);
         }
     </style>
 </head>
 <body>
+    <div class="theme-switcher" id="themeSwitcher">
+        <button id="themeToggle" onclick="toggleTheme()">🌙</button>
+    </div>
+    <div class="merchant-header">
+        <img src="your-logo.png" alt="Merchant Logo" class="merchant-logo" />
+    </div>
     <div class="container">
 
         <div class="display-section">
-            <div class="amount-display" id="amountDisplay">$0.00</div>
+            <div class="amount-display" id="amountDisplay" title="Enter the amount to charge">$0.00</div>
+            <div style="text-align:center; margin-top:8px; color:#888; font-size:1rem;">
+                Enter the amount to charge, then tap <b>Charge</b>.<br>
+                <span style="font-size:0.95rem; color:#aaa;">Need help? <a href="#" onclick="showOnboarding();return false;">See quick guide</a></span>
+            </div>
+        </div>
+    <div id="toast" class="toast" role="alert"></div>
+    <div id="onboardingModal" class="onboarding-modal" style="display:none;">
+        <div class="onboarding-content" style="padding: 32px 18px; max-width: 340px;">
+            <img src="your-logo.png" alt="Merchant Logo" class="merchant-logo" style="display:block;margin:0 auto 12px auto;box-shadow:none;" />
+            <h2 style="font-size:1.4rem;margin-bottom:18px;color:#764ba2;letter-spacing:0.5px;">Quick Guide</h2>
+            <div style="display:flex;flex-direction:column;gap:18px;margin-bottom:22px;">
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <span style="font-size:2rem;">💵</span>
+                    <span style="font-size:1.05rem;">Enter amount & tap <b>Charge</b></span>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <span style="font-size:2rem;">📱</span>
+                    <span style="font-size:1.05rem;">Ask customer to tap phone/card</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <span style="font-size:2rem;">✅</span>
+                    <span style="font-size:1.05rem;">Wait for confirmation</span>
+                </div>
+            </div>
+            <div style="font-size:0.98rem;color:#888;margin-bottom:18px;">
+                <span style="font-size:1.2rem;vertical-align:middle;">📜</span> View history or scan wallet anytime
+            </div>
+            <button onclick="hideOnboarding()" style="width:100%;margin-top:0;font-size:1.1rem;">Start</button>
+        </div>
+    </div>
+
+        <div class="keypad" aria-label="Number pad">
+            <button class="key" onclick="addDigit('1')" aria-label="1">1</button>
+            <button class="key" onclick="addDigit('2')" aria-label="2">2</button>
+            <button class="key" onclick="addDigit('3')" aria-label="3">3</button>
+            <button class="key" onclick="addDigit('4')" aria-label="4">4</button>
+            <button class="key" onclick="addDigit('5')" aria-label="5">5</button>
+            <button class="key" onclick="addDigit('6')" aria-label="6">6</button>
+            <button class="key" onclick="addDigit('7')" aria-label="7">7</button>
+            <button class="key" onclick="addDigit('8')" aria-label="8">8</button>
+            <button class="key" onclick="addDigit('9')" aria-label="9">9</button>
+            <button class="key history" onclick="showHistory()" aria-label="Show transaction history" title="Show transaction history">📜</button>
+            <button class="key" onclick="addDigit('0')" aria-label="0">0</button>
+            <button class="key clear" onclick="clearAmount()" aria-label="Clear amount" title="Clear amount">Clear</button>
         </div>
 
-        <div class="keypad">
-            <button class="key" onclick="addDigit('1')">1</button>
-            <button class="key" onclick="addDigit('2')">2</button>
-            <button class="key" onclick="addDigit('3')">3</button>
-            <button class="key" onclick="addDigit('4')">4</button>
-            <button class="key" onclick="addDigit('5')">5</button>
-            <button class="key" onclick="addDigit('6')">6</button>
-            <button class="key" onclick="addDigit('7')">7</button>
-            <button class="key" onclick="addDigit('8')">8</button>
-            <button class="key" onclick="addDigit('9')">9</button>
-            <button class="key history" onclick="showHistory()">📜</button>
-            <button class="key" onclick="addDigit('0')">0</button>
-            <button class="key clear" onclick="clearAmount()">Clear</button>
-        </div>
-
-        <button class="done-button" id="doneButton" onclick="startPayment()">
+        <button class="done-button" id="doneButton" onclick="startPayment()" aria-label="Charge customer">
             <span class="disconnect-icon" id="disconnectIcon">📡❌</span>
             Charge
         </button>
     </div>
 
     <!-- NFC Status Screens -->
-    <div class="nfc-screen" id="nfcScreen">
-        <div class="spinner"></div>
-        <div class="checkmark" style="display: none;"></div>
-        <div class="nfc-message">Waiting for tap</div>
-        <div class="nfc-submessage">
-            Hold your phone near the NFC reader<br>
+        <div class="nfc-screen" id="nfcScreen">
+            <div class="nfc-animated-icon" aria-label="Waiting for NFC tap" title="Waiting for NFC tap">
+                <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle class="nfc-wave nfc-wave1" cx="40" cy="40" r="24" stroke="#A0A5B1" stroke-width="3" />
+                  <circle class="nfc-wave nfc-wave2" cx="40" cy="40" r="32" stroke="#A0A5B1" stroke-width="2" />
+                  <path d="M52 40c0-6.627-5.373-12-12-12s-12 5.373-12 12" stroke="#4a4d57" stroke-width="3" stroke-linecap="round" fill="none"/>
+                  <rect x="36" y="28" width="8" height="24" rx="4" fill="#4a4d57"/>
+                  <rect x="38.5" y="20" width="3" height="8" rx="1.5" fill="#A0A5B1"/>
+                </svg>
+            </div>
+            <div class="checkmark" style="display: none;"></div>
+            <div class="nfc-message">Waiting for tap</div>
+            <div class="nfc-submessage">
+                Hold your phone near the NFC reader<br>
+                <span style="font-size:0.95rem; color:#e0e0e0;">Make sure your device stays steady during the process.</span>
+            </div>
+            <div class="nfc-amount" id="nfcAmount">$0.00</div>
+            <button class="cancel-button" onclick="cancelTransaction()" aria-label="Cancel transaction">Cancel</button>
+        .nfc-animated-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 18px;
+            width: 80px;
+            height: 80px;
+            position: relative;
+        }
+        .nfc-wave {
+            stroke-opacity: 0.5;
+            fill: none;
+            transform-origin: 40px 40px;
+        }
+        .nfc-wave1 {
+            animation: nfc-wave1-pulse 1.8s infinite cubic-bezier(0.4,0,0.2,1);
+        }
+        .nfc-wave2 {
+            animation: nfc-wave2-pulse 1.8s infinite cubic-bezier(0.4,0,0.2,1) 0.5s;
+        }
+        @keyframes nfc-wave1-pulse {
+            0% { stroke-opacity: 0.5; transform: scale(1); }
+            70% { stroke-opacity: 0; transform: scale(1.4); }
+            100% { stroke-opacity: 0; transform: scale(1.4); }
+        }
+        @keyframes nfc-wave2-pulse {
+            0% { stroke-opacity: 0.3; transform: scale(1); }
+            70% { stroke-opacity: 0; transform: scale(1.7); }
+            100% { stroke-opacity: 0; transform: scale(1.7); }
+        }
         </div>
-        <div class="nfc-amount" id="nfcAmount">$0.00</div>
-        <button class="cancel-button" onclick="cancelTransaction()">Cancel</button>
-    </div>
 
-    <div class="nfc-screen error" id="errorScreen" style="display: none;">
-        <div class="nfc-icon">⚠️</div>
-        <div class="nfc-message">Phone Moved Too Quickly</div>
-        <div class="nfc-submessage">Please try again</div>
-        <button class="retry-button" onclick="retryPayment()">Try Again</button>
-    </div>
+        <div class="nfc-screen error" id="errorScreen" style="display: none;">
+            <div class="nfc-icon">⚠️</div>
+            <div class="nfc-message">Phone Moved Too Quickly</div>
+            <div class="nfc-submessage">Please try again</div>
+            <button class="retry-button" onclick="retryPayment()" aria-label="Try payment again">Try Again</button>
+        </div>
 
     <div class="nfc-screen success-screen" id="successScreen" style="display: none;">
         <div class="success-icon">✅</div>
@@ -579,10 +864,10 @@
         </div>
         
         <div class="history-controls">
-            <button class="scan-wallet-button" onclick="scanWallet()">
+        <button class="scan-wallet-button" onclick="scanWallet()" aria-label="Scan wallet for history" title="Scan a wallet to view its transaction history">
                 📱 Scan Wallet for History
             </button>
-            <button class="show-all-button" onclick="showAllHistory()">
+            <button class="show-all-button" onclick="showAllHistory()" aria-label="Show all transactions" title="Show all transactions for this terminal">
                 📊 Show All Transactions
             </button>
         </div>
@@ -767,28 +1052,130 @@
             const spinner = nfcScreen.querySelector('.spinner');
             const checkmark = nfcScreen.querySelector('.checkmark');
             const cancelButton = nfcScreen.querySelector('.cancel-button');
-            
             nfcScreen.style.display = 'flex';
             nfcScreen.classList.add('error');
             nfcScreen.classList.remove('waiting-payment', 'payment-approved');
             nfcMessage.textContent = message;
-            
-            // Hide the NFC reader instruction message during error
             nfcSubmessage.style.display = 'none';
-            
             spinner.style.display = 'none';
             checkmark.style.display = 'none';
-            cancelButton.style.display = 'none'; // Hide cancel button on error
-            
-            // Clear the timeout
+            cancelButton.style.display = 'none';
             if (paymentTimeout) clearTimeout(paymentTimeout);
-            
-            // Return to main screen after 5 seconds
+            showToast(message, true);
             setTimeout(() => {
                 nfcScreen.style.display = 'none';
                 resetUI();
             }, 5000);
         }
+        // Toast notification for errors and actions
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.background = isError ? '#c82333' : '#222';
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3500);
+        }
+
+        // Onboarding modal
+        function showOnboarding() {
+            document.getElementById('onboardingModal').style.display = 'flex';
+        }
+        function hideOnboarding() {
+            document.getElementById('onboardingModal').style.display = 'none';
+        }
+
+        // Theme switcher
+        function setTheme(theme) {
+            const body = document.body;
+            const root = document.documentElement;
+            if (theme === 'dark') {
+                body.style.background = 'linear-gradient(135deg, #232526 0%, #414345 100%)';
+                root.style.setProperty('--main-bg', '#232526');
+                root.style.setProperty('--main-gradient', '#414345');
+                root.style.setProperty('--main-text', '#fff');
+                // History dark theme
+                root.style.setProperty('--history-bg', 'linear-gradient(135deg, #232526 0%, #414345 100%)');
+                root.style.setProperty('--history-text', '#fff');
+                root.style.setProperty('--history-header-bg', 'rgba(36, 37, 38, 0.92)');
+                root.style.setProperty('--history-header-text', '#fff');
+                root.style.setProperty('--history-border', 'rgba(255,255,255,0.08)');
+                root.style.setProperty('--history-controls-bg', 'rgba(36, 37, 38, 0.85)');
+                root.style.setProperty('--history-btn-bg', 'linear-gradient(135deg, #232526 0%, #764ba2 100%)');
+                root.style.setProperty('--history-btn-text', '#fff');
+                root.style.setProperty('--history-btn-hover-bg', 'linear-gradient(135deg, #764ba2 0%, #232526 100%)');
+                root.style.setProperty('--history-content-bg', 'linear-gradient(135deg, #232526 0%, #414345 100%)');
+                root.style.setProperty('--history-item-bg', 'linear-gradient(135deg, #2d2e30 0%, #3a3b3d 100%)');
+                root.style.setProperty('--history-item-failed-bg', 'linear-gradient(135deg, #3a2323 0%, #4a2d2d 100%)');
+                root.style.setProperty('--history-no-history', '#bbb');
+                root.style.setProperty('--history-time', '#bbb');
+                root.style.setProperty('--history-details', '#e0e0e0');
+                root.style.setProperty('--history-hash-bg', 'rgba(32,201,151,0.08)');
+                root.style.setProperty('--history-hash-failed-bg', 'rgba(244,67,54,0.10)');
+                root.style.setProperty('--history-wallet-bg', 'rgba(36, 37, 38, 0.98)');
+                root.style.setProperty('--history-wallet-text', '#fff');
+                document.getElementById('themeToggle').textContent = '☀️';
+                document.getElementById('themeToggle').classList.add('active');
+                localStorage.setItem('nfc-theme', 'dark');
+            } else {
+                body.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                root.style.setProperty('--main-bg', '#667eea');
+                root.style.setProperty('--main-gradient', '#764ba2');
+                root.style.setProperty('--main-text', '#fff');
+                // History light theme
+                root.style.setProperty('--history-bg', 'linear-gradient(135deg, #f7f8fa 0%, #e6e7eb 100%)');
+                root.style.setProperty('--history-text', '#333');
+                root.style.setProperty('--history-header-bg', 'rgba(255,255,255,0.96)');
+                root.style.setProperty('--history-header-text', '#764ba2');
+                root.style.setProperty('--history-border', 'rgba(160,165,177,0.13)');
+                root.style.setProperty('--history-controls-bg', 'rgba(255,255,255,0.92)');
+                root.style.setProperty('--history-btn-bg', 'linear-gradient(135deg, #e6e7eb 0%, #d3d6df 100%)');
+                root.style.setProperty('--history-btn-text', '#764ba2');
+                root.style.setProperty('--history-btn-hover-bg', 'linear-gradient(135deg, #d3d6df 0%, #e6e7eb 100%)');
+                root.style.setProperty('--history-content-bg', 'linear-gradient(135deg, #f7f8fa 0%, #e6e7eb 100%)');
+                root.style.setProperty('--history-item-bg', 'linear-gradient(135deg, #fff 0%, #f4f5f8 100%)');
+                root.style.setProperty('--history-item-failed-bg', 'linear-gradient(135deg, #fff0f0 0%, #fbeaea 100%)');
+                root.style.setProperty('--history-no-history', '#888');
+                root.style.setProperty('--history-time', '#888');
+                root.style.setProperty('--history-details', '#4a4d57');
+                root.style.setProperty('--history-hash-bg', 'rgba(32,201,151,0.06)');
+                root.style.setProperty('--history-hash-failed-bg', 'rgba(244,67,54,0.06)');
+                root.style.setProperty('--history-wallet-bg', 'rgba(255,255,255,0.98)');
+                root.style.setProperty('--history-wallet-text', '#764ba2');
+                document.getElementById('themeToggle').textContent = '🌙';
+                document.getElementById('themeToggle').classList.remove('active');
+                localStorage.setItem('nfc-theme', 'default');
+            }
+        }
+
+        function toggleTheme() {
+            const current = localStorage.getItem('nfc-theme') || 'default';
+            if (current === 'dark') {
+                setTheme('default');
+            } else {
+                setTheme('dark');
+            }
+        }
+
+        // Accessibility: focus style for all buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('focus', function() {
+                    this.style.outline = '2px solid #20c997';
+                });
+                btn.addEventListener('blur', function() {
+                    this.style.outline = '';
+                });
+            });
+            // Show onboarding for first-time users
+            if (!localStorage.getItem('nfc-onboarded')) {
+                showOnboarding();
+                localStorage.setItem('nfc-onboarded', '1');
+            }
+            // Set theme from localStorage
+            setTheme(localStorage.getItem('nfc-theme') || 'default');
+        });
 
         function resetUI() {
             const nfcScreen = document.getElementById('nfcScreen');
@@ -930,11 +1317,15 @@
         // History functionality
         function showHistory() {
             document.getElementById('historyScreen').style.display = 'flex';
+            // Hide theme switcher while history is open to avoid overlap
+            document.getElementById('themeSwitcher').style.display = 'none';
             loadTransactionHistory();
         }
 
         function closeHistory() {
             document.getElementById('historyScreen').style.display = 'none';
+            // Restore theme switcher when history is closed
+            document.getElementById('themeSwitcher').style.display = 'block';
             isWalletScanMode = false;
             document.getElementById('walletScanStatus').style.display = 'none';
         }
@@ -991,15 +1382,24 @@
 
         function displayTransactionHistory(transactions, walletAddress = null) {
             const historyList = document.getElementById('historyList');
-            
-            if (!transactions || transactions.length === 0) {
-                historyList.innerHTML = '<div class="no-history">No transactions yet</div>';
-                return;
-            }
 
-            let filteredTransactions = transactions;
+            // If no transactions, show a demo transaction
+            let txs = (transactions && transactions.length > 0) ? transactions : [
+                {
+                    timestamp: Date.now() - 1000 * 60 * 60 * 2, // 2 hours ago
+                    status: 'confirmed',
+                    amount: 12.34,
+                    chainName: 'DEMO',
+                    tokenSymbol: 'DEMO',
+                    fromAddress: '0xDEMO1234567890abcdef1234567890abcdef1234',
+                    txHash: '0xDEMOHASH1234567890abcdef1234567890abcdef1234567890abcdef',
+                    explorerUrl: 'https://etherscan.io/tx/0xDEMOHASH1234567890abcdef1234567890abcdef1234567890abcdef'
+                }
+            ];
+
+            let filteredTransactions = txs;
             if (walletAddress) {
-                filteredTransactions = transactions.filter(tx => 
+                filteredTransactions = txs.filter(tx =>
                     tx.fromAddress && tx.fromAddress.toLowerCase() === walletAddress.toLowerCase()
                 );
             }
@@ -1013,7 +1413,11 @@
                 const date = new Date(transaction.timestamp).toLocaleString();
                 const status = transaction.status === 'confirmed' ? 'confirmed' : 'failed';
                 const statusClass = status === 'confirmed' ? '' : 'failed';
-                
+                const chain = transaction.chainName || 'Unknown';
+                const token = transaction.tokenSymbol || 'Unknown';
+                const from = transaction.fromAddress ? `${transaction.fromAddress.slice(0, 6)}...${transaction.fromAddress.slice(-4)}` : 'Unknown';
+                const txHash = transaction.txHash ? `${transaction.txHash.slice(0, 10)}...${transaction.txHash.slice(-8)}` : '';
+                const explorerUrl = transaction.explorerUrl || '#';
                 return `
                     <div class="transaction-item ${statusClass}">
                         <div class="transaction-header">
@@ -1021,13 +1425,13 @@
                             <div class="transaction-time">${date}</div>
                         </div>
                         <div class="transaction-details">
-                            <div><strong>Chain:</strong> ${transaction.chainName || 'Unknown'}</div>
-                            <div><strong>Token:</strong> ${transaction.tokenSymbol || 'Unknown'}</div>
-                            <div><strong>From:</strong> ${transaction.fromAddress ? `${transaction.fromAddress.slice(0, 6)}...${transaction.fromAddress.slice(-4)}` : 'Unknown'}</div>
-                            <div><strong>Status:</strong> ${status}</div>
+                            <span style="display:inline-block;margin-right:10px;"><strong>Chain:</strong> <span style="color:#ffd700;">${chain}</span></span>
+                            <span style="display:inline-block;margin-right:10px;"><strong>Token:</strong> <span style="color:#20c997;">${token}</span></span>
+                            <span style="display:inline-block;"><strong>From:</strong> <span style="color:#87CEEB;">${from}</span></span>
+                            <span style="display:inline-block;margin-left:10px;"><strong>Status:</strong> <span style="color:${status === 'confirmed' ? '#20c997' : '#f44336'};text-transform:capitalize;">${status}</span></span>
                             ${transaction.txHash ? `
                                 <div class="transaction-hash">
-                                    <strong>TX:</strong> <a href="${transaction.explorerUrl || '#'}" target="_blank" style="color: #87CEEB;">${transaction.txHash.slice(0, 10)}...${transaction.txHash.slice(-8)}</a>
+                                    <span style="font-weight:600;">TX:</span> <a href="${explorerUrl}" target="_blank">${txHash}</a>
                                 </div>
                             ` : ''}
                         </div>
