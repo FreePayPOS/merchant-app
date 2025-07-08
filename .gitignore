@@ -1,6 +1,9 @@
 node_modules/
 dist/
 .env
+logs/
+coverage/
+*.log
 server.log
 working-nfc-service.ts
 build-config.env
