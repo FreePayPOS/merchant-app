@@ -37,6 +37,8 @@ npm test
 npm run validate
 ```
 
+> **Note**: The `nfc-pcsc` dependency requires native compilation. For CI environments, use `npm ci --ignore-scripts` to skip native builds.
+
 ### **Production**
 
 ```bash
