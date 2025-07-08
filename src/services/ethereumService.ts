@@ -26,6 +26,6 @@ export class EthereumService {
    * Check if an address is the ETH placeholder address
    */
   static isEthAddress(address: string): boolean {
-    return address === '0x0000000000000000000000000000000000000000';
+    return address.trim().toLowerCase() === '0x0000000000000000000000000000000000000000';
   }
 } 

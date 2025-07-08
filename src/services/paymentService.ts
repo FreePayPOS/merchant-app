@@ -1,7 +1,7 @@
 import { Reader } from 'nfc-pcsc';
-import { RECIPIENT_ADDRESS, SUPPORTED_CHAINS } from '../config/index.js';
-import { TokenWithPrice } from '../types/index.js';
-import { EthereumService } from './ethereumService.js';
+import { RECIPIENT_ADDRESS, SUPPORTED_CHAINS } from '../config/index';
+import { TokenWithPrice } from '../types/index';
+import { EthereumService } from './ethereumService';
 
 /**
  * Service for handling payment requests and EIP-681 URI generation
@@ -107,20 +107,25 @@ export class PaymentService {
       } else {
         console.log(`❌ No response received from device`);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error sending payment request:', error);
-      
-      // Check for specific NFC transmission errors that indicate phone moved too quickly
-      if (error.code === 'failure' && 
-          (error.message?.includes('An error occurred while transmitting') ||
-           error.message?.includes('TransmitError') ||
-           error.previous?.message?.includes('SCardTransmit error') ||
-           error.previous?.message?.includes('Transaction failed'))) {
+
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error as { code?: string }).code === 'failure' &&
+        (
+          (error as { message?: string }).message?.includes('An error occurred while transmitting') ||
+          (error as { message?: string }).message?.includes('TransmitError') ||
+          (error as { previous?: { message?: string } }).previous?.message?.includes('SCardTransmit error') ||
+          (error as { previous?: { message?: string } }).previous?.message?.includes('Transaction failed')
+        )
+      ) {
         console.log('📱💨 Phone moved too quickly during payment request transmission');
         throw new Error('PHONE_MOVED_TOO_QUICKLY');
       }
-      
-      // Re-throw other errors as-is
+
       throw error;
     }
   }
@@ -151,7 +156,7 @@ export class PaymentService {
     console.log(`🎯 Priority Order: L2 Stablecoin > L2 Other > L2 ETH > L1 Stablecoin > L1 Other > L1 ETH\n`);
     
     // Group by priority categories for better display
-    const L1_CHAINS = [1]; // Ethereum mainnet
+    const _L1_CHAINS = [1]; // Ethereum mainnet
     const L2_CHAINS = [8453, 42161, 10, 137, 393402133025423]; // Base, Arbitrum, Optimism, Polygon, Starknet
     
     const isStablecoin = (token: TokenWithPrice): boolean => {
@@ -256,7 +261,7 @@ export class PaymentService {
    */
   private static selectBestPaymentToken(viableTokens: TokenWithPrice[]): TokenWithPrice {
     // Define L1 and L2 chains
-    const L1_CHAINS = [1]; // Ethereum mainnet
+    const _L1_CHAINS = [1]; // Ethereum mainnet
     const L2_CHAINS = [8453, 42161, 10, 137, 393402133025423]; // Base, Arbitrum, Optimism, Polygon, Starknet
     
     // Helper function to check if token is a stablecoin
