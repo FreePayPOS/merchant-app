@@ -6,7 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { App } from './app.js'; // App class will be refactored
 import { AlchemyService } from './services/alchemyService.js';
-import { SUPPORTED_CHAINS, ChainConfig } from './config/index.js';
+import { SUPPORTED_CHAINS } from './config/index.js';
 import { TransactionMonitoringService } from './services/transactionMonitoringService.js';
 import { RealtimeTransactionMonitor } from './services/realtimeTransactionMonitor.js';
 import { ConnectionMonitorService } from './services/connectionMonitorService.js';
