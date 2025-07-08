@@ -1,8 +1,8 @@
-import { SUPPORTED_CHAINS, ChainConfig } from '../config/index.js';
-import { TokenWithPrice, AlchemyTokenBalance, AlchemyTokenMetadata, MultiChainPortfolio, ChainBalances } from '../types/index.js';
-import { PriceService } from './priceService.js';
-import { Alchemy, Network, TransactionReceipt, TransactionResponse, AlchemySubscription, AlchemyMinedTransactionsAddress, AssetTransfersCategory } from 'alchemy-sdk';
-import { config } from '../config/index.js';
+import { SUPPORTED_CHAINS, ChainConfig } from '../config/index';
+import { TokenWithPrice, AlchemyTokenBalance, MultiChainPortfolio, ChainBalances } from '../types/index';
+import { PriceService } from './priceService';
+import { Alchemy, Network, AlchemySubscription, AssetTransfersCategory } from 'alchemy-sdk';
+import { config } from '../config/index';
 
 interface Transaction {
     hash: string;
@@ -330,7 +330,7 @@ export class AlchemyService {
           } else {
             return { address: address.toLowerCase(), metadata: null };
           }
-        } catch (error) {
+        } catch (_error) {
           return { address: address.toLowerCase(), metadata: null };
         }
       });
@@ -345,7 +345,7 @@ export class AlchemyService {
       
       const tokensWithPrices: TokenWithPrice[] = [];
       
-      nonZeroBalances.forEach((token, index) => {
+      nonZeroBalances.forEach((token, _index) => {
         try {
           const balance = parseInt(token.tokenBalance, 16);
           const contractAddress = token.contractAddress.toLowerCase();
@@ -388,7 +388,7 @@ export class AlchemyService {
             
             tokensWithPrices.push(tokenWithPrice);
           }
-        } catch (e) {
+        } catch (_e) {
           console.log(`❌ Error processing token ${token.contractAddress} on ${chain.displayName}`);
         }
       });
@@ -522,7 +522,7 @@ export class AlchemyService {
     merchantAddress: string,
     callback: (tx: Transaction & { tokenSymbol?: string, tokenAddress?: string, decimals?: number }) => void,
     chainId: number = 1,
-    minimumValueWei: number = 0
+    _minimumValueWei: number = 0
   ): Promise<() => void> {
     if (!this.isInitialized) this.initialize();
 
@@ -725,7 +725,7 @@ export class AlchemyService {
    */
   static cleanup(): void {
     console.log(`🧹 Cleaning up ${this.activeSubscriptions.size} active subscriptions`);
-    this.activeSubscriptions.forEach((subscription, key) => {
+    this.activeSubscriptions.forEach((subscription, _key) => {
       if (subscription.subscription.eth) {
         subscription.subscription.eth.removeAllListeners();
       }

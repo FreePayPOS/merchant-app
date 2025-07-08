@@ -1,5 +1,5 @@
 import { Alchemy } from 'alchemy-sdk';
-import { ALCHEMY_API_KEY } from '../config/index.js';
+import { ALCHEMY_API_KEY } from '../config/index';
 
 /**
  * Service for caching ETH price and refreshing it periodically using Alchemy SDK
@@ -41,7 +41,6 @@ export class PriceCacheService {
    * Get cached ETH price
    */
   static getCachedEthPrice(): number {
-    const ageMs = Date.now() - this.lastFetchTime;
     return this.cachedEthPrice;
   }
 
@@ -106,13 +105,9 @@ export class PriceCacheService {
       }
       
       if (ethPrice > 0) {
-        const oldPrice = this.cachedEthPrice;
-        const oldTime = this.lastFetchTime;
-        
         this.cachedEthPrice = ethPrice;
         this.lastFetchTime = Date.now();
         
-        const timestamp = new Date().toLocaleTimeString();
       } else {
         console.error('❌ DEBUG: Invalid ETH price received from Alchemy SDK (price <= 0):', ethPrice);
       }
@@ -139,7 +134,6 @@ export class PriceCacheService {
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
       this.refreshInterval = null;
-    } else {
     }
   }
 
@@ -152,9 +146,7 @@ export class PriceCacheService {
       clearInterval(this.refreshInterval);
       this.refreshInterval = null;
       console.log('🛑 Price cache service stopped');
-    } else {
-      console.log('🔍 DEBUG: Price cache service was not running');
-    }
+    } 
   }
 
   /**

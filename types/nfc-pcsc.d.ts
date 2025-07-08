@@ -1,19 +1,20 @@
-/* minimal typings – just enough for our script */
 declare module 'nfc-pcsc' {
-    import { EventEmitter } from 'events';
-  
-    export interface Reader extends EventEmitter {
-      name: string;
-      connect(): Promise<void>;
-      close(): void;
-      aid: string;
-      transmit(data: Buffer, resLen: number): Promise<Buffer>;
-      on(event: 'card',   listener: () => void): this;
-      on(event: 'error',  listener: (err: Error) => void): this;
-    }
-  
-    export class NFC extends EventEmitter {
-      on(event: 'reader', listener: (reader: Reader) => void): this;
-    }
+  export interface Reader {
+    name: string;
+    protocols: number[];
+    aid?: string; // Added to match usage in nfcService
+    connect(): Promise<void>;
+    disconnect(): Promise<void>;
+    transmit(data: Buffer, maxResponseLength: number): Promise<Buffer>;
+    on(event: string, listener: (...args: any[]) => void): this;
+    removeAllListeners(event?: string): this;
   }
+
+  export class NFC {
+    constructor();
+    on(event: string, listener: (...args: any[]) => void): this;
+    start(): void;
+    stop(): void;
+  }
+}
   

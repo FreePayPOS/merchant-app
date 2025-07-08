@@ -1,6 +1,6 @@
 import { Alchemy, Network } from 'alchemy-sdk';
-import { ALCHEMY_API_KEY, SUPPORTED_CHAINS } from '../config/index.js';
-import { PriceCacheService } from './priceCacheService.js';
+import { ALCHEMY_API_KEY, SUPPORTED_CHAINS } from '../config/index';
+import { PriceCacheService } from './priceCacheService';
 
 /**
  * Service for fetching token prices from Alchemy Prices API using Alchemy SDK

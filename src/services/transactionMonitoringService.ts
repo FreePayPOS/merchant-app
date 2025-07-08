@@ -1,4 +1,4 @@
-import { Alchemy, Network, Utils, AssetTransfersResponse, AssetTransfersResult, AssetTransfersCategory } from 'alchemy-sdk';
+import { Alchemy, Network, Utils, AssetTransfersResult, AssetTransfersCategory } from 'alchemy-sdk';
 import { RECIPIENT_ADDRESS, config } from '../config/index.js';
 
 interface PaymentSession {
@@ -134,14 +134,16 @@ export class TransactionMonitoringService {
       // Update last checked block
       this.lastCheckedBlock = toBlock;
 
-    } catch (error: any) {
-      // Handle "toBlock is past head" gracefully by staying further behind
-      if (error.message?.includes('toBlock is past head')) {
-        console.log('⚠️  Staying further behind blockchain head to avoid past head errors');
-        this.lastCheckedBlock = Math.max(0, this.lastCheckedBlock - 1);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        if (error.message?.includes('toBlock is past head')) {
+          console.log('⚠️  Staying further behind blockchain head to avoid past head errors');
+          this.lastCheckedBlock = Math.max(0, this.lastCheckedBlock - 1);
+        } else {
+          console.error('Error checking for payments:', error);
+        }
       } else {
         console.error('Error checking for payments:', error);
-        // Don't stop monitoring for transient errors
       }
     }
   }

@@ -23,6 +23,17 @@ interface PendingTransaction {
   blockNumber?: string;
 }
 
+interface WebSocketMessage {
+  method?: string;
+  id?: number;
+  result?: string | number;
+  error?: { code: number; message: string };
+  params?: {
+    result?: PendingTransaction | { number: string };
+    subscription?: string;
+  };
+}
+
 export class RealtimeTransactionMonitor {
   private static currentSession: PaymentSession | null = null;
   private static wsConnection: WebSocket | null = null;
@@ -112,18 +123,18 @@ export class RealtimeTransactionMonitor {
         try {
           const message = JSON.parse(data.toString());
           this.handleWebSocketMessage(message);
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('❌ [WS DEBUG] Error parsing WebSocket message:', error);
           console.error('❌ [WS DEBUG] Raw data:', data.toString());
         }
       });
 
-      this.wsConnection.on('error', (error) => {
+      this.wsConnection.on('error', (error: unknown) => {
         console.error('❌ [WS DEBUG] WebSocket ERROR:', error);
         console.error('❌ [WS DEBUG] Error details:', {
-          message: error.message,
-          code: (error as any).code,
-          type: (error as any).type
+          message: (error as Error).message,
+          code: (error as { code?: string }).code,
+          type: (error as { type?: string }).type
         });
         reject(error);
       });
@@ -231,7 +242,7 @@ export class RealtimeTransactionMonitor {
   /**
    * Handle incoming WebSocket messages
    */
-  private static handleWebSocketMessage(message: any): void {
+  private static handleWebSocketMessage(message: WebSocketMessage): void {
     console.log(`🔍 [WS DEBUG] Processing WebSocket message - type: ${message.method || 'response'}`);
     
     if (!this.currentSession) {
@@ -259,8 +270,8 @@ export class RealtimeTransactionMonitor {
     }
 
     // Handle pending transaction notifications
-    if (message.method === "alchemy_pendingTransactions" && message.params?.result) {
-      const tx: PendingTransaction = message.params.result;
+    if (message.method === "alchemy_pendingTransactions" && message.params?.result && 'hash' in message.params.result) {
+      const tx: PendingTransaction = message.params.result as PendingTransaction;
       console.log(`📥 [WS DEBUG] PENDING TRANSACTION DETECTED: ${tx.hash}`);
       console.log(`📥 [WS DEBUG] Transaction details:`, {
         hash: tx.hash,
@@ -277,7 +288,7 @@ export class RealtimeTransactionMonitor {
     }
 
     // Handle new block notifications - check for transfers in the new block
-    if (message.method === "eth_subscription" && message.params?.result?.number) {
+    if (message.method === "eth_subscription" && message.params?.result && 'number' in message.params.result) {
       const blockNumber = parseInt(message.params.result.number, 16);
       console.log(`🧱 [WS DEBUG] New block: ${blockNumber}`);
       console.log(`🧱 [WS DEBUG] Checking for transfers in block ${blockNumber}`);
@@ -346,9 +357,9 @@ export class RealtimeTransactionMonitor {
         
         await this.processAssetTransfer(transfer);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If we still get "past head" error, it means we're too close to the chain tip
-      if (error.message?.includes('past head')) {
+      if (error instanceof Error && error.message?.includes('past head')) {
         console.log(`⏳ [WS DEBUG] Block ${blockNumber} still too new, will be caught in next block`);
       } else {
         console.error(`❌ [WS DEBUG] Error checking blocks for transfers:`, error);
@@ -416,7 +427,7 @@ export class RealtimeTransactionMonitor {
       const amount = BigInt('0x' + amountHex);
 
       return { to: toAddress, amount };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error decoding ERC-20 transfer:', error);
       return null;
     }
@@ -471,7 +482,7 @@ export class RealtimeTransactionMonitor {
           console.log(`✅ Transaction ${txHash} mined, verifying via asset transfers API`);
           await this.verifyMinedTransaction(txHash);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(`Error verifying mined transaction ${txHash}:`, error);
       }
     }, 15000); // Wait 15 seconds for transaction to be mined
@@ -498,7 +509,7 @@ export class RealtimeTransactionMonitor {
       if (matchingTransfer) {
         await this.processAssetTransfer(matchingTransfer);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error verifying mined transaction:', error);
     }
   }
@@ -564,7 +575,7 @@ export class RealtimeTransactionMonitor {
         for (const transfer of transfers.transfers) {
           await this.processAssetTransfer(transfer);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('❌ [WS DEBUG] Error during fallback polling:', error);
       }
     }, this.FALLBACK_POLLING_INTERVAL);

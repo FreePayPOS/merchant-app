@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  merchant-app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - ALCHEMY_API_KEY=${ALCHEMY_API_KEY}
+      - PORT=3000
+    volumes:
+      - ./logs:/app/logs
+      - /dev/bus/usb:/dev/bus/usb  # For NFC device access
+    devices:
+      - /dev/bus/usb:/dev/bus/usb  # For NFC device access
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Add a database for transaction history
+  # postgres:
+  #   image: postgres:15-alpine
+  #   environment:
+  #     POSTGRES_DB: merchant_app
+  #     POSTGRES_USER: merchant
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD}
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+
+# volumes:
+#   postgres_data: 

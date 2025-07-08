@@ -5,62 +5,95 @@ A multi-chain NFC payment terminal that processes cryptocurrency payments across
 ## 🌐 Supported Networks
 
 - **Ethereum**
-- **Base** 
-- **Arbitrum** 
-- **Optimism** 
-- **Polygon** 
+- **Base**
+- **Arbitrum**
+- **Optimism**
+- **Polygon**
+- **Starknet**
 
 ### 🎯 **Smart Payment Priority**
 
 Rather than negotiate a chain / token combo with the merchant, the payment terminal handles it automatically. First it figures out a chain the merchant supports that you also have funds on, then sends a transaction with ETH or an ERC-20 token with this priority:
 
-```
+```sh
 L2 Stablecoin > L2 Other > L2 ETH > L1 Stablecoin > L1 Other > L1 ETH
 ```
 
 ## 🚀 Quick Start
 
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+### **Development**
 
-2. **Environment setup:**
-   ```bash
-   echo "ALCHEMY_API_KEY=your_alchemy_api_key_here" > .env
-   ```
+```bash
+# Install & setup
+make setup
 
-3. **Run the terminal:**
-   ```bash
-   npm start
-   ```
+# Start development server
+npm run dev
 
-4. **Open the interface:**
-   Navigate to `http://localhost:3000`
+# Run tests
+npm test
+
+# Validate code
+npm run validate
+```
+
+> **Note**: The `nfc-pcsc` dependency requires native compilation. For CI environments, use `npm ci --ignore-scripts` to skip native builds.
+
+### **Production**
+
+```bash
+# Install dependencies
+npm install
+
+# Environment setup
+echo "ALCHEMY_API_KEY=your_alchemy_api_key_here" > .env
+
+# Build & start
+npm start
+```
+
+### **Docker**
+
+```bash
+# Build & run with Docker
+make docker-run
+
+# Or manually
+docker-compose up -d
+```
+
+### **Open Interface**
+
+Navigate to `http://localhost:3000`
 
 ## 🏗️ Architecture
 
-```
+```bash
 src/
 ├── server.ts                   # Express server & WebSocket handler
 ├── app.ts                     # Main application orchestrator
 ├── web/index.html             # Payment terminal UI
 ├── config/index.ts            # Multi-chain configuration
+├── config/env.ts              # Environment validation
+├── utils/logger.ts            # Structured logging
 └── services/
     ├── nfcService.ts          # NFC reader & wallet scanning
     ├── alchemyService.ts      # Multi-chain balance & monitoring
     ├── paymentService.ts      # Payment selection & EIP-681 generation
     ├── ethereumService.ts     # Address validation utilities
     └── addressProcessor.ts    # Duplicate processing prevention
+tests/
+├── services/                  # Unit tests
+├── api/                       # API tests
+└── setup.ts                   # Test configuration
 scripts/
-└── rpi-deploy/
-    ├── setup-build-environment.sh  # Install dependencies to allow building a Raspberry Pi image
-    └── build-pi-image-osx.sh       # Build a Raspberry Pi image
+└── rpi-deploy/               # Raspberry Pi deployment
 ```
 
 ## 💡 Usage
 
 ### **Processing Payments**
+
 1. Enter amount using the keypad (cents-based: "150" = $1.50)
 2. Tap "Charge" to initiate payment
 3. Customer taps NFC device to send payment
@@ -68,11 +101,11 @@ scripts/
 5. "Approved" message with block explorer link
 
 ### **Transaction History**
+
 1. Tap the 📜 history button on the keypad
 2. View all transactions or scan a wallet for specific history
 3. Tap "📱 Scan Wallet for History" and have customer tap their device
 4. Browse filtered transactions for that specific wallet
-
 
 ## 🔄 Payment Flow
 
@@ -96,12 +129,14 @@ scripts/
 This NFC payment terminal can be deployed as a **plug-and-play kiosk** on Raspberry Pi hardware for production use.
 
 ### **Hardware Requirements**
+
 - Raspberry Pi 4B (4GB+ RAM recommended)
-- 7" Official Raspberry Pi Touchscreen 
+- 7" Official Raspberry Pi Touchscreen
 - **ACR1252U-M1 NFC Reader** (specifically supported)
 - 32GB+ MicroSD card
 
 ### **Deployment Features**
+
 - **One-command build** creates bootable SD card image
 - **Pre-configured WiFi** and API credentials
 - **Automatic startup** with fullscreen kiosk mode
@@ -109,6 +144,7 @@ This NFC payment terminal can be deployed as a **plug-and-play kiosk** on Raspbe
 - **macOS and Linux** build support
 
 ### **Quick Deploy**
+
 ```bash
 # Navigate to deployment scripts
 cd scripts/rpi-deploy
@@ -121,6 +157,33 @@ cp build-config.env.template build-config.env
 ./build-pi-image-osx.sh
 
 # Flash the generated nfc-terminal-<date>.img.gz file to SD card using Raspberry Pi Imager and boot!
+```
+
+## 🧪 Testing & Quality
+
+- **40+ unit tests** covering core services
+- **ESLint** with TypeScript rules
+- **Type checking** with strict mode
+- **Health checks** for monitoring
+- **CI/CD** with GitHub Actions
+
+## 📦 Available Commands
+
+```bash
+# Development
+npm run dev              # Start dev server
+npm run test             # Run tests
+npm run test:coverage    # Test coverage
+npm run lint             # Lint code
+npm run validate         # Full validation
+
+# Docker
+make docker-build        # Build image
+make docker-run          # Run container
+make docker-stop         # Stop container
+
+# Help
+make help               # Show all commands
 ```
 
 📖 **[Complete Deployment Guide](README-DEPLOYMENT.md)**

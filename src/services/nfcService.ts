@@ -345,7 +345,7 @@ export class NFCService {
       clearTimeout(timeoutId);
       this.disarmPayment();
       return result;
-    } catch (error) {
+    } catch (_error) {
       console.log(`🔧 DEBUG: Card handler promise error, clearing timeout and disarming`);
       clearTimeout(timeoutId);
       this.disarmPayment();
@@ -372,7 +372,7 @@ export class NFCService {
   /**
    * Process wallet address scan response
    */
-  private async processWalletScan(phoneResponse: string, reader: Reader): Promise<void> {
+  private async processWalletScan(phoneResponse: string, _reader: Reader): Promise<void> {
     let ethAddress: string | null = null;
     let chainId: number | undefined;
     
@@ -441,7 +441,7 @@ export class NFCService {
       clearTimeout(timeoutId);
       this.disarmWalletScan();
       return result;
-    } catch (error) {
+    } catch (_error) {
       clearTimeout(timeoutId);
       this.disarmWalletScan();
       return { success: false, message: 'Wallet scan processing error', errorType: 'PROCESSING_ERROR' };

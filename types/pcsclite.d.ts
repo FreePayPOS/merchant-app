@@ -1,6 +1,7 @@
 declare module 'pcsclite' {
     import { EventEmitter } from 'events';
     interface CardConnectOpts { share_mode: number; protocol: number }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     interface Reader extends EventEmitter {
       name: string;
       state: number;
@@ -14,6 +15,6 @@ declare module 'pcsclite' {
       transmit(data: Buffer, recvLen: number, protocol: number,
                cb: (err: any, res: Buffer) => void): void;
     }
-    export = function (): EventEmitter;  // returns pcsc instance emitting 'reader'
-  }
-  
+    const pcsc: () => EventEmitter;  // returns pcsc instance emitting 'reader'
+    export = pcsc;
+}
