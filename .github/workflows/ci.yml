@@ -35,7 +35,7 @@ jobs:
     - name: Run tests
       run: npm run test:coverage
       env:
-        ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+        ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY || 'test-key' }}
 
     - name: Run security audit
       run: npm audit --audit-level moderate
