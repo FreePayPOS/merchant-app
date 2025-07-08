@@ -65,16 +65,16 @@ export class AlchemyService {
    */
   private static getBlockExplorerUrl(chainId: number, txHash: string): string {
     const explorerMap: {[key: number]: string} = {
-      1: 'https://etherscan.io/tx/',               // Ethereum
-      8453: 'https://basescan.org/tx/',            // Base  
-      42161: 'https://arbiscan.io/tx/',            // Arbitrum
-      10: 'https://optimistic.etherscan.io/tx/',   // Optimism
-      137: 'https://polygonscan.com/tx/',          // Polygon
-      393402133025423: 'https://starkscan.co/tx/' // Starknet
+      1: 'https://eth.blockscout.com/tx/',                 // Ethereum
+      8453: 'https://base.blockscout.com/tx/',             // Base  
+      42161: 'https://arbitrum.blockscout.com/tx/',        // Arbitrum
+      10: 'https://optimism.blockscout.com/tx/',           // Optimism
+      137: 'https://polygon.blockscout.com/tx/',           // Polygon
+      393402133025423: 'https://starkscan.co/tx/'          // Starknet
     };
     
     const baseUrl = explorerMap[chainId];
-    return baseUrl ? `${baseUrl}${txHash}` : `https://etherscan.io/tx/${txHash}`;
+    return baseUrl ? `${baseUrl}${txHash}` : `https://eth.blockscout.com/tx/${txHash}`;
   }
 
   /**

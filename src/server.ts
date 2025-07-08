@@ -172,15 +172,15 @@ async function monitorTransaction(
                     // Generate block explorer URL
                     const getBlockExplorerUrl = (chainId: number, txHash: string): string => {
                         const explorerMap: {[key: number]: string} = {
-                            1: 'https://etherscan.io/tx/',
-                            8453: 'https://basescan.org/tx/',
-                            42161: 'https://arbiscan.io/tx/',
-                            10: 'https://optimistic.etherscan.io/tx/',
-                            137: 'https://polygonscan.com/tx/',
+                            1: 'https://eth.blockscout.com/tx/',
+                            8453: 'https://base.blockscout.com/tx/',
+                            42161: 'https://arbitrum.blockscout.com/tx/',
+                            10: 'https://optimism.blockscout.com/tx/',
+                            137: 'https://polygon.blockscout.com/tx/',
                             393402133025423: 'https://starkscan.co/tx/'
                         };
                         const baseUrl = explorerMap[chainId];
-                        return baseUrl ? `${baseUrl}${txHash}` : `https://etherscan.io/tx/${txHash}`;
+                        return baseUrl ? `${baseUrl}${txHash}` : `https://eth.blockscout.com/tx/${txHash}`;
                     };
                     
                     const explorerUrl = getBlockExplorerUrl(chainId, txHash);
@@ -249,15 +249,15 @@ async function monitorTransaction(
                         
                         const getBlockExplorerUrl = (chainId: number, txHash: string): string => {
                             const explorerMap: {[key: number]: string} = {
-                                1: 'https://etherscan.io/tx/',
-                                8453: 'https://basescan.org/tx/',
-                                42161: 'https://arbiscan.io/tx/',
-                                10: 'https://optimistic.etherscan.io/tx/',
-                                137: 'https://polygonscan.com/tx/',
-                                393402133025423: 'https://starkscan.co/tx/'
+                            1: 'https://eth.blockscout.com/tx/',
+                            8453: 'https://base.blockscout.com/tx/',
+                            42161: 'https://arbitrum.blockscout.com/tx/',
+                            10: 'https://optimism.blockscout.com/tx/',
+                            137: 'https://polygon.blockscout.com/tx/',
+                            393402133025423: 'https://starkscan.co/tx/'
                             };
                             const baseUrl = explorerMap[chainId];
-                            return baseUrl ? `${baseUrl}${txHash}` : `https://etherscan.io/tx/${txHash}`;
+                            return baseUrl ? `${baseUrl}${txHash}` : `https://eth.blockscout.com/tx/${txHash}`;
                         };
                         
                         const explorerUrl = getBlockExplorerUrl(chainId, txHash);
