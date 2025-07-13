@@ -1,3 +1,34 @@
+
+<div align="right">
+  <details>
+    <summary >🌐 Language</summary>
+    <div>
+      <div align="right">
+        <p><a href="https://openaitx.github.io/view.html?user=FreePayPOS&project=merchant-app&lang=en">English</a></p>
+        <p><a href="https://openaitx.github.io/view.html?user=FreePayPOS&project=merchant-app&lang=zh-CN">简体中文</a></p>
+        <p><a href="https://openaitx.github.io/view.html?user=FreePayPOS&project=merchant-app&lang=zh-TW">繁體中文</a></p>
+        <p><a href="https://openaitx.github.io/view.html?user=FreePayPOS&project=merchant-app&lang=ja">日本語</a></p>
+        <p><a href="https://openaitx.github.io/view.html?user=FreePayPOS&project=merchant-app&lang=ko">한국어</a></p>
+        <p><a href="https://openaitx.github.io/view.html?user=FreePayPOS&project=merchant-app&lang=hi">हिन्दी</a></p>
+        <p><a href="https://openaitx.github.io/view.html?user=FreePayPOS&project=merchant-app&lang=th">ไทย</a></p>
+        <p><a href="https://openaitx.github.io/view.html?user=FreePayPOS&project=merchant-app&lang=fr">Français</a></p>
+        <p><a href="https://openaitx.github.io/view.html?user=FreePayPOS&project=merchant-app&lang=de">Deutsch</a></p>
+        <p><a href="https://openaitx.github.io/view.html?user=FreePayPOS&project=merchant-app&lang=es">Español</a></p>
+        <p><a href="https://openaitx.github.io/view.html?user=FreePayPOS&project=merchant-app&lang=it">Itapano</a></p>
+        <p><a href="https://openaitx.github.io/view.html?user=FreePayPOS&project=merchant-app&lang=ru">Русский</a></p>
+        <p><a href="https://openaitx.github.io/view.html?user=FreePayPOS&project=merchant-app&lang=pt">Português</a></p>
+        <p><a href="https://openaitx.github.io/view.html?user=FreePayPOS&project=merchant-app&lang=nl">Nederlands</a></p>
+        <p><a href="https://openaitx.github.io/view.html?user=FreePayPOS&project=merchant-app&lang=pl">Polski</a></p>
+        <p><a href="https://openaitx.github.io/view.html?user=FreePayPOS&project=merchant-app&lang=ar">العربية</a></p>
+        <p><a href="https://openaitx.github.io/view.html?user=FreePayPOS&project=merchant-app&lang=fa">فارسی</a></p>
+        <p><a href="https://openaitx.github.io/view.html?user=FreePayPOS&project=merchant-app&lang=tr">Türkçe</a></p>
+        <p><a href="https://openaitx.github.io/view.html?user=FreePayPOS&project=merchant-app&lang=vi">Tiếng Việt</a></p>
+        <p><a href="https://openaitx.github.io/view.html?user=FreePayPOS&project=merchant-app&lang=id">Bahasa Indonesia</a></p>
+      </div>
+    </div>
+  </details>
+</div>
+
 # NFC Payment Terminal
 
 A multi-chain NFC payment terminal that processes cryptocurrency payments across 5 blockchain networks with real-time transaction monitoring and comprehensive history tracking.
