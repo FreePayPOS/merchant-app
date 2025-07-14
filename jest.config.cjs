@@ -7,7 +7,13 @@ module.exports = {
     '**/?(*.)+(spec|test).ts'
   ],
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    '^.+\\.(ts|tsx)$': ['ts-jest', { 
+      useESM: false,
+      tsconfig: 'tsconfig.test.json'
+    }],
+  },
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1'
   },
   collectCoverageFrom: [
     'src/**/*.ts',
@@ -17,6 +23,5 @@ module.exports = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   testTimeout: 10000,
 }; 

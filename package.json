@@ -10,7 +10,7 @@
     "start:backend": "NODE_OPTIONS='--trace-warnings --trace-uncaught --trace-exit --trace-sigint --stack-trace-limit=100' node --loader ts-node/esm src/server.ts",
     "start": "concurrently \"npm run start:backend\" \"wait-on http://localhost:3000 && open http://localhost:3000\"",
     "dev": "nodemon src/server.ts",
-    "test": "jest",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "lint": "eslint . --ext .ts",

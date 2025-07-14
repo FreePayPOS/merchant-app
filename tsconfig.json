@@ -26,8 +26,8 @@
     // "moduleDetection": "auto",                        /* Control what method is used to detect module-format JS files. */
 
     /* Modules */
-    "module": "ES2022",                                /* Specify what module code is generated. */
-    "moduleResolution": "node",                          /* Specify how TypeScript looks up a file from a given module specifier. */
+    "module": "NodeNext",                                /* Specify what module code is generated. */
+    "moduleResolution": "NodeNext",                          /* Specify how TypeScript looks up a file from a given module specifier. */
     "rootDir": "src",                                    /* Specify the root folder within your source files. */
     // "baseUrl": "./",                                  /* Specify the base directory to resolve non-relative module names. */
     // "paths": {},                                      /* Specify a set of entries that re-map imports to additional lookup locations. */
@@ -75,7 +75,7 @@
     // "declarationDir": "./",                           /* Specify the output directory for generated declaration files. */
 
     /* Interop Constraints */
-    // "isolatedModules": true,                          /* Ensure that each file can be safely transpiled without relying on other imports. */
+    "isolatedModules": true,                          /* Ensure that each file can be safely transpiled without relying on other imports. */
     // "verbatimModuleSyntax": true,                     /* Do not transform or elide any imports or exports not marked as type-only, ensuring they are written in the output file's format based on the 'module' setting. */
     // "isolatedDeclarations": true,                     /* Require sufficient annotation on exports so other tools can trivially generate declaration files. */
     // "erasableSyntaxOnly": true,                       /* Do not allow runtime constructs that are not part of ECMAScript. */
@@ -110,7 +110,7 @@
     // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
     "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "types/**/*"],
   "exclude": ["node_modules", "dist"],
   "ts-node": {
     "esm": true,
