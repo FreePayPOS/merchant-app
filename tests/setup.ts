@@ -1,5 +1,7 @@
 // Test setup file
-import '@testing-library/jest-dom';
+// Use require for compatibility with Jest's CJS/ESM hybrid mode
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+require('@testing-library/jest-dom');
 
 // Mock console methods to reduce noise in tests
 const originalConsole = { ...console };
@@ -64,14 +66,15 @@ const MockWebSocket = jest.fn().mockImplementation(() => ({
   send: jest.fn(),
   close: jest.fn(),
   readyState: 1
-})) as any;
+}));
 
-MockWebSocket.CONNECTING = 0;
-MockWebSocket.OPEN = 1;
-MockWebSocket.CLOSING = 2;
-MockWebSocket.CLOSED = 3;
+// Add static properties
+Object.defineProperty(MockWebSocket, 'CONNECTING', { value: 0, writable: false });
+Object.defineProperty(MockWebSocket, 'OPEN', { value: 1, writable: false });
+Object.defineProperty(MockWebSocket, 'CLOSING', { value: 2, writable: false });
+Object.defineProperty(MockWebSocket, 'CLOSED', { value: 3, writable: false });
 
-global.WebSocket = MockWebSocket;
+(global as any).WebSocket = MockWebSocket;
 
 // Mock timers to prevent real intervals
 jest.useFakeTimers();
