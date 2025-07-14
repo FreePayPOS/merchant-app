@@ -52,6 +52,8 @@ echo "ALCHEMY_API_KEY=your_alchemy_api_key_here" > .env
 npm start
 ```
 
+> **Provider Flexibility**: The terminal supports 18 providers across blockchain, price, and explorer services including Alchemy, Infura, QuickNode, Moralis, Ankr, GetBlock, CoinGecko, CoinMarketCap, Binance, Kraken, 1inch, Etherscan, Blockscout, and chain-specific explorers. Configure via environment variables - the system automatically falls back to alternative providers if one fails.
+
 ### **Docker**
 
 ```bash
@@ -159,9 +161,12 @@ cp build-config.env.template build-config.env
 # Flash the generated nfc-terminal-<date>.img.gz file to SD card using Raspberry Pi Imager and boot!
 ```
 
+> **Provider Flexibility**: You can use any of the 18 supported providers by setting the appropriate API key. The system automatically handles fallbacks if your primary provider is unavailable.
+
 ## 🧪 Testing & Quality
 
 - **40+ unit tests** covering core services
+- **63 provider tests** with 100% pass rate
 - **ESLint** with TypeScript rules
 - **Type checking** with strict mode
 - **Health checks** for monitoring
@@ -186,4 +191,4 @@ make docker-stop         # Stop container
 make help               # Show all commands
 ```
 
-📖 **[Complete Deployment Guide](README-DEPLOYMENT.md)**
+📖 **[Complete Documentation](docs/README.md)** - All documentation and guides
