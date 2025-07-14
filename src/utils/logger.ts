@@ -1,5 +1,5 @@
 import winston from 'winston';
-import { env } from '../config/env';
+import { env } from '../config/env.js';
 
 const logLevel = env.NODE_ENV === 'production' ? 'info' : 'debug';
 

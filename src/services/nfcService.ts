@@ -6,7 +6,7 @@ import { AddressProcessor } from './addressProcessor.js';
 import { AlchemyService } from './alchemyService.js';
 import { PaymentService } from './paymentService.js';
 import { CAIP10Service } from './caip10Service.js';
-import { broadcast } from '../server.js';
+import { broadcast } from '../utils/broadcast.js';
 
 /**
  * Service for handling NFC reader operations

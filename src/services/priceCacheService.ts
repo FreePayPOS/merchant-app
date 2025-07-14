@@ -1,5 +1,5 @@
 import { Alchemy } from 'alchemy-sdk';
-import { ALCHEMY_API_KEY } from '../config/index';
+import { ALCHEMY_API_KEY } from '../config/index.js';
 
 /**
  * Service for caching ETH price and refreshing it periodically using Alchemy SDK

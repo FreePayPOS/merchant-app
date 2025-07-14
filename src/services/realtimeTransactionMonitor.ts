@@ -1,6 +1,6 @@
 import WebSocket from 'ws';
 import { Alchemy, Network, Utils, AssetTransfersResult, AssetTransfersCategory } from 'alchemy-sdk';
-import { RECIPIENT_ADDRESS, config } from '../config/index.js';
+import { RECIPIENT_ADDRESS, config } from '../config/index';
 
 interface PaymentSession {
   recipientAddress: string;
@@ -87,7 +87,10 @@ export class RealtimeTransactionMonitor {
       console.log(`✅ Real-time monitoring started via WebSocket`);
     } catch (error) {
       console.warn(`⚠️  WebSocket connection failed, falling back to polling:`, error);
-      this.startFallbackPolling();
+      // Ensure fallback polling starts even if WebSocket fails
+      if (this.currentSession) {
+        this.startFallbackPolling();
+      }
     }
   }
 
@@ -105,19 +108,7 @@ export class RealtimeTransactionMonitor {
     return new Promise((resolve, reject) => {
       this.wsConnection = new WebSocket(wsUrl);
 
-      this.wsConnection.on('open', () => {
-        console.log(`🔌 [WS DEBUG] WebSocket CONNECTED successfully to Alchemy`);
-        console.log(`🔌 [WS DEBUG] Connection state: ${this.wsConnection?.readyState} (1=OPEN)`);
-        this.reconnectAttempts = 0;
-        
-        // Subscribe to pending transactions to our recipient address
-        this.subscribeToPendingTransactions();
-        
-        // Also subscribe to new blocks as a backup
-        this.subscribeToNewBlocks();
-        
-        resolve();
-      });
+
 
       this.wsConnection.on('message', (data: Buffer) => {
         try {
@@ -166,7 +157,7 @@ export class RealtimeTransactionMonitor {
       });
 
       // Set connection timeout
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         if (this.wsConnection?.readyState !== WebSocket.OPEN) {
           console.error(`⏰ [WS DEBUG] WebSocket connection timeout after 10 seconds`);
           console.error(`⏰ [WS DEBUG] Connection state: ${this.wsConnection?.readyState}`);
@@ -174,6 +165,22 @@ export class RealtimeTransactionMonitor {
           reject(new Error('WebSocket connection timeout'));
         }
       }, 10000); // 10 second timeout
+
+      // Clear timeout on successful connection
+      this.wsConnection.on('open', () => {
+        clearTimeout(timeoutId);
+        console.log(`🔌 [WS DEBUG] WebSocket CONNECTED successfully to Alchemy`);
+        console.log(`🔌 [WS DEBUG] Connection state: ${this.wsConnection?.readyState} (1=OPEN)`);
+        this.reconnectAttempts = 0;
+        
+        // Subscribe to pending transactions to our recipient address
+        this.subscribeToPendingTransactions();
+        
+        // Also subscribe to new blocks as a backup
+        this.subscribeToNewBlocks();
+        
+        resolve();
+      });
     });
   }
 
@@ -329,41 +336,25 @@ export class RealtimeTransactionMonitor {
 
     try {
       console.log(`🔍 [WS DEBUG] Fetching transfers in block ${blockNumber} to ${this.currentSession.recipientAddress}`);
-      
-      // Use a safer approach - check from 2 blocks ago up to this block
-      const safeFromBlock = Math.max(0, blockNumber - 1);
-      
-      const transfers = await alchemy.core.getAssetTransfers({
+      const response = await alchemy.core.getAssetTransfers({
+        fromBlock: Utils.hexlify(blockNumber),
+        toBlock: Utils.hexlify(blockNumber),
         toAddress: this.currentSession.recipientAddress,
-        fromBlock: Utils.hexlify(safeFromBlock),
-        toBlock: Utils.hexlify(blockNumber), // Check up to the previous block to avoid "past head" errors
         category: [AssetTransfersCategory.EXTERNAL, AssetTransfersCategory.ERC20],
-        withMetadata: true
+        maxCount: 100
       });
 
-      console.log(`🔍 [WS DEBUG] Found ${transfers.transfers.length} transfers in blocks ${safeFromBlock}-${blockNumber - 1}`);
-      
-      // Process each transfer
-      for (const transfer of transfers.transfers) {
-        console.log(`📥 [WS DEBUG] Transfer found:`, {
-          hash: transfer.hash,
-          from: transfer.from,
-          to: transfer.to,
-          value: transfer.value,
-          asset: transfer.asset,
-          tokenAddress: transfer.rawContract?.address || 'ETH',
-          blockNum: transfer.blockNum
-        });
+      if (response.transfers && response.transfers.length > 0) {
+        console.log(`✅ [WS DEBUG] Found ${response.transfers.length} transfers in block ${blockNumber}`);
         
-        await this.processAssetTransfer(transfer);
-      }
-    } catch (error: unknown) {
-      // If we still get "past head" error, it means we're too close to the chain tip
-      if (error instanceof Error && error.message?.includes('past head')) {
-        console.log(`⏳ [WS DEBUG] Block ${blockNumber} still too new, will be caught in next block`);
+        for (const transfer of response.transfers) {
+          await this.processAssetTransfer(transfer);
+        }
       } else {
-        console.error(`❌ [WS DEBUG] Error checking blocks for transfers:`, error);
+        console.log(`ℹ️ [WS DEBUG] No transfers found in block ${blockNumber}`);
       }
+    } catch (error) {
+      console.log(`❌ [WS DEBUG] Error in checkBlockForTransfers:`, error);
     }
   }
 
@@ -380,8 +371,8 @@ export class RealtimeTransactionMonitor {
     console.log(`📮 To: ${tx.to}`);
     console.log(`💰 Value: ${tx.value}`);
 
-    // For ETH transfers, check value directly
-    if (session.tokenAddress.toLowerCase() === session.recipientAddress.toLowerCase()) {
+    // For ETH transfers, check if the recipient matches and verify the value
+    if (session.tokenSymbol === 'ETH' && tx.to.toLowerCase() === session.recipientAddress.toLowerCase()) {
       const transferAmount = BigInt(tx.value || '0');
       if (this.verifyPayment(transferAmount, session.tokenAddress, tx.hash)) {
         return;
@@ -577,6 +568,10 @@ export class RealtimeTransactionMonitor {
         }
       } catch (error: unknown) {
         console.error('❌ [WS DEBUG] Error during fallback polling:', error);
+        // Don't stop polling on error, just log and continue
+        if (this.currentSession?.onError) {
+          this.currentSession.onError(`Polling error: ${(error as Error).message}`);
+        }
       }
     }, this.FALLBACK_POLLING_INTERVAL);
   }

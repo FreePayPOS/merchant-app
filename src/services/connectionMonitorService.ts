@@ -1,5 +1,5 @@
-import { AlchemyService } from './alchemyService.js';
-import { SUPPORTED_CHAINS } from '../config/index.js';
+import { AlchemyService } from './alchemyService';
+import { SUPPORTED_CHAINS } from '../config/index';
 
 interface ConnectionStatus {
     connected: boolean;

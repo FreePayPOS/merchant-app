@@ -1,8 +1,8 @@
-import { SUPPORTED_CHAINS, ChainConfig } from '../config/index';
-import { TokenWithPrice, AlchemyTokenBalance, MultiChainPortfolio, ChainBalances } from '../types/index';
-import { PriceService } from './priceService';
+import { SUPPORTED_CHAINS, ChainConfig } from '../config/index.js';
+import { TokenWithPrice, AlchemyTokenBalance, MultiChainPortfolio, ChainBalances } from '../types/index.js';
+import { PriceService } from './priceService.js';
 import { Alchemy, Network, AlchemySubscription, AssetTransfersCategory } from 'alchemy-sdk';
-import { config } from '../config/index';
+import { config } from '../config/index.js';
 
 interface Transaction {
     hash: string;

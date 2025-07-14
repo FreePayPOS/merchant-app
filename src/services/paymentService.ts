@@ -1,7 +1,7 @@
 import { Reader } from 'nfc-pcsc';
-import { RECIPIENT_ADDRESS, SUPPORTED_CHAINS } from '../config/index';
-import { TokenWithPrice } from '../types/index';
-import { EthereumService } from './ethereumService';
+import { RECIPIENT_ADDRESS, SUPPORTED_CHAINS } from '../config/index.js';
+import { TokenWithPrice } from '../types/index.js';
+import { EthereumService } from './ethereumService.js';
 
 /**
  * Service for handling payment requests and EIP-681 URI generation
