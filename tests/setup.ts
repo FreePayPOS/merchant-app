@@ -15,5 +15,72 @@ afterAll(() => {
   console.error = originalConsole.error;
 });
 
+// Mock axios to prevent real HTTP requests
+jest.mock('axios', () => ({
+  create: jest.fn(() => ({
+    get: jest.fn().mockResolvedValue({ data: { status: 'ok' } }),
+    post: jest.fn().mockResolvedValue({ data: { result: '0x1234' } }),
+    interceptors: {
+      request: { use: jest.fn() },
+      response: { use: jest.fn() }
+    }
+  })),
+  get: jest.fn().mockResolvedValue({ data: { status: 'ok' } }),
+  post: jest.fn().mockResolvedValue({ data: { result: '0x1234' } })
+}));
+
+// Mock Alchemy SDK
+jest.mock('alchemy-sdk', () => ({
+  Alchemy: jest.fn().mockImplementation(() => ({
+    core: {
+      getBlockNumber: jest.fn().mockResolvedValue('0x1234'),
+      getBalance: jest.fn().mockResolvedValue('0x1000000000000000000'),
+      getTransactionCount: jest.fn().mockResolvedValue('0x5')
+    },
+    nft: {
+      getNftsForOwner: jest.fn().mockResolvedValue({ ownedNfts: [] })
+    }
+  })),
+  Network: {
+    ETH_MAINNET: 'eth-mainnet',
+    ETH_SEPOLIA: 'eth-sepolia',
+    BASE_MAINNET: 'base-mainnet',
+    ARB_MAINNET: 'arb-mainnet',
+    OPT_MAINNET: 'opt-mainnet',
+    POLYGON_MAINNET: 'polygon-mainnet',
+    POLYGON_MUMBAI: 'polygon-mumbai',
+    ETH_EPHEMERY: 'eth-ephemery',
+    BASE_EPHEMERY: 'base-ephemery',
+    ARB_EPHEMERY: 'arb-ephemery',
+    OPT_EPHEMERY: 'opt-ephemery',
+    POLYGON_EPHEMERY: 'polygon-ephemery'
+  }
+}));
+
+// Mock WebSocket
+const MockWebSocket = jest.fn().mockImplementation(() => ({
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
+  send: jest.fn(),
+  close: jest.fn(),
+  readyState: 1
+})) as any;
+
+MockWebSocket.CONNECTING = 0;
+MockWebSocket.OPEN = 1;
+MockWebSocket.CLOSING = 2;
+MockWebSocket.CLOSED = 3;
+
+global.WebSocket = MockWebSocket;
+
+// Mock timers to prevent real intervals
+jest.useFakeTimers();
+
 // Global test timeout
-jest.setTimeout(10000); 
+jest.setTimeout(10000);
+
+// Cleanup after each test
+afterEach(() => {
+  jest.clearAllTimers();
+  jest.clearAllMocks();
+}); 

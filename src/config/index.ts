@@ -12,6 +12,8 @@ export const COOLDOWN_DURATION = 30000; // 30 seconds cooldown after processing
 
 // API configuration
 export const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || 'YOUR_API_KEY';
+export const INFURA_API_KEY = process.env.INFURA_API_KEY || '';
+export const AXOL_API_KEY = process.env.AXOL_API_KEY || '';
 
 // Multi-chain Alchemy configuration
 export interface ChainConfig {
@@ -117,5 +119,7 @@ export const ALCHEMY_PRICES_API_BASE_URL = 'https://api.g.alchemy.com/prices/v1'
 
 export const config = {
     ALCHEMY_API_KEY: process.env.ALCHEMY_API_KEY || '',
+    INFURA_API_KEY: process.env.INFURA_API_KEY || '',
+    AXOL_API_KEY: process.env.AXOL_API_KEY || '',
     // ... other existing config values ...
 }; 
