@@ -1,6 +1,6 @@
 import { Alchemy, Network } from 'alchemy-sdk';
-import { PriceProvider, ProviderConfig } from '../../types/providers';
-import { SUPPORTED_CHAINS } from '../../config/index';
+import { PriceProvider, ProviderConfig } from '../../types/providers.js';
+import { SUPPORTED_CHAINS } from '../../config/index.js';
 
 /**
  * Alchemy price provider implementation using Alchemy SDK

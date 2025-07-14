@@ -11,11 +11,24 @@ import {
 import { AlchemyBlockchainProvider } from './blockchain/AlchemyBlockchainProvider';
 import { InfuraBlockchainProvider } from './blockchain/InfuraBlockchainProvider';
 import { AxolBlockchainProvider } from './blockchain/AxolBlockchainProvider';
+import { QuickNodeBlockchainProvider } from './blockchain/QuickNodeBlockchainProvider';
+import { MoralisBlockchainProvider } from './blockchain/MoralisBlockchainProvider';
+import { AnkrBlockchainProvider } from './blockchain/AnkrBlockchainProvider';
+import { GetBlockBlockchainProvider } from './blockchain/GetBlockBlockchainProvider';
 import { CoinGeckoPriceProvider } from './price/CoinGeckoPriceProvider';
 import { AlchemyPriceProvider } from './price/AlchemyPriceProvider';
 import { AxolPriceProvider } from './price/AxolPriceProvider';
+import { CoinMarketCapPriceProvider } from './price/CoinMarketCapPriceProvider';
+import { BinancePriceProvider } from './price/BinancePriceProvider';
+import { KrakenPriceProvider } from './price/KrakenPriceProvider';
+import { OneInchPriceProvider } from './price/OneInchPriceProvider';
 import { EtherscanExplorerProvider } from './explorer/EtherscanExplorerProvider';
 import { AxolExplorerProvider } from './explorer/AxolExplorerProvider';
+import { BlockscoutExplorerProvider } from './explorer/BlockscoutExplorerProvider';
+import { ArbiscanExplorerProvider } from './explorer/ArbiscanExplorerProvider';
+import { PolygonscanExplorerProvider } from './explorer/PolygonscanExplorerProvider';
+import { BasescanExplorerProvider } from './explorer/BasescanExplorerProvider';
+import { OptimisticEtherscanExplorerProvider } from './explorer/OptimisticEtherscanExplorerProvider';
 
 /**
  * Factory for creating provider instances
@@ -38,16 +51,16 @@ export class ProviderFactory implements IProviderFactory {
         return new AxolBlockchainProvider(config);
       
       case BLOCKCHAIN_PROVIDER_TYPES.QUICKNODE:
-        throw new Error('QuickNode provider not yet implemented');
+        return new QuickNodeBlockchainProvider(config);
       
       case BLOCKCHAIN_PROVIDER_TYPES.MORALIS:
-        throw new Error('Moralis provider not yet implemented');
+        return new MoralisBlockchainProvider(config);
       
       case BLOCKCHAIN_PROVIDER_TYPES.ANKR:
-        throw new Error('Ankr provider not yet implemented');
+        return new AnkrBlockchainProvider(config);
       
       case BLOCKCHAIN_PROVIDER_TYPES.GETBLOCK:
-        throw new Error('GetBlock provider not yet implemented');
+        return new GetBlockBlockchainProvider(config);
       
       default:
         throw new Error(`Unsupported blockchain provider type: ${config.type}`);
@@ -69,16 +82,16 @@ export class ProviderFactory implements IProviderFactory {
         return new AxolPriceProvider(config);
       
       case PRICE_PROVIDER_TYPES.COINMARKETCAP:
-        throw new Error('CoinMarketCap provider not yet implemented');
+        return new CoinMarketCapPriceProvider(config);
       
       case PRICE_PROVIDER_TYPES.BINANCE:
-        throw new Error('Binance provider not yet implemented');
+        return new BinancePriceProvider(config);
       
       case PRICE_PROVIDER_TYPES.KRAKEN:
-        throw new Error('Kraken provider not yet implemented');
+        return new KrakenPriceProvider(config);
       
       case PRICE_PROVIDER_TYPES.ONECHINCH:
-        throw new Error('1inch provider not yet implemented');
+        return new OneInchPriceProvider(config);
       
       default:
         throw new Error(`Unsupported price provider type: ${config.type}`);
@@ -97,19 +110,19 @@ export class ProviderFactory implements IProviderFactory {
         return new AxolExplorerProvider(config);
       
       case EXPLORER_PROVIDER_TYPES.BLOCKSCOUT:
-        throw new Error('Blockscout provider not yet implemented');
+        return new BlockscoutExplorerProvider(config);
       
       case EXPLORER_PROVIDER_TYPES.ARBISCAN:
-        throw new Error('Arbiscan provider not yet implemented');
+        return new ArbiscanExplorerProvider(config);
       
       case EXPLORER_PROVIDER_TYPES.POLYGONSCAN:
-        throw new Error('Polygonscan provider not yet implemented');
+        return new PolygonscanExplorerProvider(config);
       
       case EXPLORER_PROVIDER_TYPES.BASESCAN:
-        throw new Error('Basescan provider not yet implemented');
+        return new BasescanExplorerProvider(config);
       
       case EXPLORER_PROVIDER_TYPES.OPTIMISTIC_ETHERSCAN:
-        throw new Error('Optimistic Etherscan provider not yet implemented');
+        return new OptimisticEtherscanExplorerProvider(config);
       
       default:
         throw new Error(`Unsupported explorer provider type: ${config.type}`);

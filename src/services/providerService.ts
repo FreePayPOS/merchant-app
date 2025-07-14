@@ -1,6 +1,6 @@
-import { ProviderManager } from '../providers/ProviderManager';
-import { Transaction } from '../types/providers';
-import { getProviderConfig, validateProviderConfig } from '../config/providers';
+import { ProviderManager } from '../providers/ProviderManager.js';
+import { Transaction } from '../types/providers.js';
+import { getProviderConfig, validateProviderConfig } from '../config/providers.js';
 
 /**
  * Service that uses the provider manager to handle all blockchain operations

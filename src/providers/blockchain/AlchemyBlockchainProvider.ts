@@ -1,6 +1,6 @@
 import { Alchemy, Network } from 'alchemy-sdk';
-import { BlockchainProvider, Transaction, ProviderConfig } from '../../types/providers';
-import { SUPPORTED_CHAINS } from '../../config/index';
+import { BlockchainProvider, Transaction, ProviderConfig } from '../../types/providers.js';
+import { SUPPORTED_CHAINS } from '../../config/index.js';
 
 /**
  * Alchemy blockchain provider implementation

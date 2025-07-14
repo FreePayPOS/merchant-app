@@ -5,8 +5,8 @@ import {
   MultiProviderConfig,
   ProviderHealth,
   ProviderManager as IProviderManager
-} from '../types/providers';
-import { ProviderFactory } from './ProviderFactory';
+} from '../types/providers.js';
+import { ProviderFactory } from './ProviderFactory.js';
 
 /**
  * Manager for handling multiple providers with fallback logic

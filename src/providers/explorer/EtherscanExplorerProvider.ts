@@ -1,4 +1,4 @@
-import { ExplorerProvider, ProviderConfig } from '../../types/providers';
+import { ExplorerProvider, ProviderConfig } from '../../types/providers.js';
 
 /**
  * Etherscan explorer provider implementation

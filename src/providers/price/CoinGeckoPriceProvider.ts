@@ -1,5 +1,5 @@
-import { PriceProvider, ProviderConfig } from '../../types/providers';
-import { SUPPORTED_CHAINS } from '../../config/index';
+import { PriceProvider, ProviderConfig } from '../../types/providers.js';
+import { SUPPORTED_CHAINS } from '../../config/index.js';
 
 /**
  * CoinGecko price provider implementation

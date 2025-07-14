@@ -1,4 +1,4 @@
-import { PriceProvider, ProviderConfig } from '../../types/providers';
+import { PriceProvider, ProviderConfig } from '../../types/providers.js';
 import axios, { AxiosInstance } from 'axios';
 
 /**

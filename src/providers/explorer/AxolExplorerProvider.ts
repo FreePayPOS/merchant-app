@@ -1,4 +1,4 @@
-import { ExplorerProvider, ProviderConfig } from '../../types/providers';
+import { ExplorerProvider, ProviderConfig } from '../../types/providers.js';
 import axios, { AxiosInstance } from 'axios';
 
 /**
