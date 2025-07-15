@@ -83,7 +83,17 @@ jest.useFakeTimers();
 jest.setTimeout(10000);
 
 // Cleanup after each test
-afterEach(() => {
+afterEach(async () => {
   jest.clearAllTimers();
   jest.clearAllMocks();
+  
+  // Clean up AlchemyService resources to prevent timer leaks
+  try {
+    const { AlchemyService } = await import('../src/services/alchemyService');
+    if (AlchemyService && typeof AlchemyService.forceCleanup === 'function') {
+      AlchemyService.forceCleanup();
+    }
+  } catch (_error) {
+    // Ignore errors if AlchemyService is not available
+  }
 }); 

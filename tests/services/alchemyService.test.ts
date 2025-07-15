@@ -89,6 +89,13 @@ describe('AlchemyService', () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
+    // Force cleanup all AlchemyService resources to prevent timer leaks
+    AlchemyService.forceCleanup();
+  });
+
+  afterAll(() => {
+    // Final cleanup to ensure no resources are left hanging
+    AlchemyService.forceCleanup();
   });
 
   describe('isEthereumAddress', () => {

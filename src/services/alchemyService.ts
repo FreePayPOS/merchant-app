@@ -541,6 +541,7 @@ export class AlchemyService {
 
     let isMonitoring = true;
     let lastCheckedBlock = 0;
+    let currentTimer: NodeJS.Timeout | null = null;
 
     // Get the latest block number to start monitoring from
     try {
@@ -641,7 +642,8 @@ export class AlchemyService {
 
       // Continue polling if still monitoring
       if (isMonitoring) {
-        setTimeout(pollForTransfers, 3000); // Poll every 3 seconds
+        currentTimer = setTimeout(pollForTransfers, 3000); // Poll every 3 seconds
+        currentTimer.unref(); // Prevent timer from keeping process alive
       }
     };
 
@@ -655,6 +657,12 @@ export class AlchemyService {
     return () => {
       console.log(`🔌 Stopping asset transfer monitoring on ${chainConfig.displayName}`);
       isMonitoring = false;
+      
+      // Clear the current timer if it exists
+      if (currentTimer) {
+        clearTimeout(currentTimer);
+        currentTimer = null;
+      }
     };
   }
 
@@ -737,6 +745,25 @@ export class AlchemyService {
   }
 
   /**
+   * Force cleanup all resources and stop all monitoring
+   * This should be called when shutting down the application
+   */
+  static forceCleanup(): void {
+    console.log('🧹 Force cleaning up all AlchemyService resources');
+    
+    // Clean up active subscriptions
+    this.cleanup();
+    
+    // Clear all alchemy instances
+    this.alchemyInstances.clear();
+    
+    // Reset initialization flag
+    this.isInitialized = false;
+    
+    console.log('✅ AlchemyService cleanup completed');
+  }
+
+  /**
    * Special polling-based monitoring for Starknet since WebSockets aren't supported
    */
   private static async startStarknetPolling(
@@ -801,11 +828,17 @@ export class AlchemyService {
         }
       }, 5000); // Poll every 5 seconds
 
+      // Prevent interval from keeping process alive
+      pollingInterval.unref();
+
       // Timeout after 5 minutes
-      setTimeout(() => {
+      const timeoutTimer = setTimeout(() => {
         clearInterval(pollingInterval);
         reject(new Error('Starknet polling timeout'));
       }, 300000);
+
+      // Prevent timeout from keeping process alive
+      timeoutTimer.unref();
     });
   }
 
