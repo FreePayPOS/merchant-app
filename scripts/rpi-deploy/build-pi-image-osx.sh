@@ -688,12 +688,29 @@ dtparam=spi=on
 # Audio
 dtparam=audio=on
 
-# Display rotation: 90 degrees clockwise (portrait mode)
-display_rotate=3  # 90 degrees counterclockwise
+# Display rotation: 90 degrees counterclockwise (portrait mode)
+display_rotate=3
 
-# Touch screen calibration (may need adjustment for your specific display)
-# These values are typical for 5" 800x480 displays but may need fine-tuning
+# Enable I2C for various touch controllers
+dtparam=i2c_arm=on
+dtparam=i2c1=on
+
+# Touch screen support - multiple options for different displays
+# Raspberry Pi official touchscreen (ADS7846)
 dtoverlay=ads7846,cs=1,penirq=25,penirq_pull=2,speed=50000,keep_vref_on=1,swapxy=1,pmax=255,xohms=150,xmin=200,xmax=3900,ymin=200,ymax=3900
+
+# Enable interfaces for various display types
+dtparam=spi=on
+dtparam=i2c_arm=on
+dtparam=i2c1=on
+
+# DPI interface for ribbon cable displays (like some DFRobot models)
+# Note: DPI timing will be auto-configured if needed
+enable_dpi_lcd=1
+display_default_lcd=1
+
+# Ensure HDMI hotplug works
+hdmi_force_hotplug=1
 DISPLAY_CONFIG
 
 # Disable display manager and getty on tty1 (we'll use systemd service instead)

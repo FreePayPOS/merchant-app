@@ -389,8 +389,34 @@ cat > build/app-bundle/config/start-kiosk.sh << 'EOF'
 #!/bin/bash
 echo "🖥️ Starting NFC Terminal Kiosk Mode..."
 
-# Set display for portrait mode (90 degrees clockwise)
+# Set display for portrait mode
 export DISPLAY=:0
+
+# Detect display type
+echo "🔍 Detecting display type..."
+DISPLAY_TYPE="unknown"
+
+# Check for DPI/DSI interfaces first (ribbon cable displays)
+if [ -e "/sys/class/drm/card0-DPI-1" ] || [ -e "/sys/class/drm/card1-DPI-1" ]; then
+    DISPLAY_TYPE="dfrobot-dpi"
+    echo "✅ Detected DFRobot display (DPI ribbon cable)"
+elif [ -e "/sys/class/drm/card0-DSI-1" ] || [ -e "/sys/class/drm/card1-DSI-1" ]; then
+    # Check if it's DFRobot or Raspberry Pi DSI
+    if dmesg | grep -i "dfrobot" > /dev/null 2>&1; then
+        DISPLAY_TYPE="dfrobot-dsi"
+        echo "✅ Detected DFRobot display (DSI ribbon cable)"
+    else
+        DISPLAY_TYPE="raspberry-pi-dsi"
+        echo "✅ Detected Raspberry Pi DSI display"
+    fi
+# Check for HDMI displays with specific touch controllers
+elif xinput list 2>/dev/null | grep -i "ADS7846" > /dev/null; then
+    DISPLAY_TYPE="raspberry-pi-hdmi"
+    echo "✅ Detected Raspberry Pi HDMI display (via touch controller)"
+else
+    DISPLAY_TYPE="generic"
+    echo "⚠️  Using generic display configuration"
+fi
 
 # Wait for X server to be ready
 echo "⏳ Waiting for X server..."
@@ -430,17 +456,68 @@ if [ $timeout -le 0 ]; then
     fi
 fi
 
-# Configure display rotation (90 degrees counterclockwise for portrait)
+# Configure display rotation based on detected type
 echo "🔄 Setting up portrait display rotation..."
-xrandr --output HDMI-1 --rotate left 2>/dev/null || \
-xrandr --output HDMI-2 --rotate left 2>/dev/null || \
-xrandr --output HDMI-A-1 --rotate left 2>/dev/null || \
-echo "Display rotation not applied (may be configured at boot level)"
 
-# Configure touchscreen for portrait mode (swap axes approach)
-echo "👆 Configuring touchscreen..."
-xinput set-prop "ADS7846 Touchscreen" "Coordinate Transformation Matrix" 1 0 0 0 1 0 0 0 1 2>/dev/null || \
-echo "Touchscreen transformation not applied (device may not be present)"
+# Find active display output
+ACTIVE_OUTPUT=""
+for output in HDMI-1 HDMI-2 HDMI-A-1 DSI-1 DPI-1; do
+    if xrandr | grep "$output connected" > /dev/null 2>&1; then
+        ACTIVE_OUTPUT="$output"
+        echo "✅ Found active display output: $ACTIVE_OUTPUT"
+        break
+    fi
+done
+
+if [ -n "$ACTIVE_OUTPUT" ]; then
+    xrandr --output "$ACTIVE_OUTPUT" --rotate left 2>/dev/null || \
+    echo "Display rotation not applied (may be configured at boot level)"
+else
+    echo "⚠️  No active display output found for rotation"
+fi
+
+# Get actual screen dimensions after rotation
+SCREEN_INFO=$(xrandr | grep " connected" | head -1)
+if [[ $SCREEN_INFO =~ ([0-9]+)x([0-9]+) ]]; then
+    SCREEN_WIDTH="${BASH_REMATCH[1]}"
+    SCREEN_HEIGHT="${BASH_REMATCH[2]}"
+    echo "📏 Detected resolution: ${SCREEN_WIDTH}x${SCREEN_HEIGHT}"
+else
+    # Default to expected portrait dimensions
+    SCREEN_WIDTH=480
+    SCREEN_HEIGHT=800
+    echo "⚠️  Using default resolution: ${SCREEN_WIDTH}x${SCREEN_HEIGHT}"
+fi
+
+# Configure touchscreen based on display type
+echo "👆 Configuring touchscreen for $DISPLAY_TYPE..."
+
+case "$DISPLAY_TYPE" in
+    "dfrobot-dpi"|"dfrobot-dsi")
+        # DFRobot ribbon cable displays need swapped + inverted X axes
+        echo "Configuring DFRobot ribbon cable display touch..."
+        for device in $(xinput list | grep -i "touch" | grep -oP 'id=\K[0-9]+'); do
+            echo "Configuring DFRobot touch device ID: $device"
+            # Swapped + Inverted X transformation (proven to work)
+            xinput set-prop "$device" "Coordinate Transformation Matrix" 0 -1 1 1 0 0 0 0 1 2>/dev/null || \
+            xinput set-prop "$device" "libinput Calibration Matrix" 0 -1 1 1 0 0 0 0 1 2>/dev/null || \
+            echo "Could not set transformation for device $device"
+        done
+        ;;
+    "raspberry-pi-hdmi"|"raspberry-pi-dsi")
+        # Raspberry Pi official touchscreen
+        xinput set-prop "ADS7846 Touchscreen" "Coordinate Transformation Matrix" 1 0 0 0 1 0 0 0 1 2>/dev/null || \
+        echo "Touchscreen transformation not applied (device may not be present)"
+        ;;
+    *)
+        # Generic touch configuration
+        echo "Using generic touch configuration"
+        # Try to configure any touch device found
+        for device in $(xinput list | grep -i "touch" | grep -oP 'id=\K[0-9]+'); do
+            xinput set-prop "$device" "Coordinate Transformation Matrix" 0 -1 1 1 0 0 0 0 1 2>/dev/null || true
+        done
+        ;;
+esac
 
 # Set up display power management
 echo "⚡ Configuring display settings..."
@@ -480,7 +557,7 @@ exec chromium-browser \
     --allow-running-insecure-content \
     --touch-events=enabled \
     --start-fullscreen \
-    --window-size=480,800 \
+    --window-size=${SCREEN_WIDTH:-480},${SCREEN_HEIGHT:-800} \
     --window-position=0,0 \
     --force-device-scale-factor=1 \
     --overscroll-history-navigation=0 \
@@ -677,6 +754,288 @@ echo ""
 EOF
 chmod +x build/app-bundle/config/debug-gui.sh
 
+# Create display detection script
+echo "🔍 Creating display detection script..."
+cat > build/app-bundle/config/detect-display.sh << 'EOF'
+#!/bin/bash
+set -e
+
+echo "🔍 Detecting Display Type and Configuration..."
+echo "============================================"
+
+# Function to detect display type
+detect_display() {
+    local display_type="unknown"
+    
+    # Check for DFRobot display markers (ribbon cable DSI/DPI)
+    if [ -e "/sys/class/drm/card0-DSI-1" ] || [ -e "/sys/class/drm/card1-DSI-1" ]; then
+        # Check if it's DFRobot by looking at EDID or other markers
+        if dmesg | grep -i "dfrobot" > /dev/null 2>&1; then
+            display_type="dfrobot-dsi"
+        else
+            display_type="raspberry-pi-dsi"
+        fi
+    elif [ -e "/sys/class/drm/card0-DPI-1" ] || [ -e "/sys/class/drm/card1-DPI-1" ]; then
+        display_type="dfrobot-dpi"
+    # Check for HDMI displays with touch controllers
+    elif dmesg | grep -i "ads7846" > /dev/null 2>&1; then
+        display_type="raspberry-pi-hdmi"
+    elif xinput list 2>/dev/null | grep -i "ADS7846" > /dev/null; then
+        display_type="raspberry-pi-hdmi"
+    else
+        display_type="generic"
+    fi
+    
+    echo "$display_type"
+}
+
+# Function to get display resolution
+get_display_info() {
+    local info=""
+    if command -v xrandr > /dev/null 2>&1 && [ -n "$DISPLAY" ]; then
+        info=$(xrandr 2>/dev/null | grep " connected" | head -1 || echo "")
+    fi
+    echo "$info"
+}
+
+# Main detection
+DISPLAY_TYPE=$(detect_display)
+echo "📺 Detected Display Type: $DISPLAY_TYPE"
+
+# Get current display info
+if [ -n "$DISPLAY" ]; then
+    DISPLAY_INFO=$(get_display_info)
+    echo "🖥️  Display Info: $DISPLAY_INFO"
+fi
+
+# Show current boot configuration
+echo ""
+echo "🔧 Current Boot Configuration:"
+echo "=============================="
+if [ -r /boot/config.txt ]; then
+    echo "Display rotation: $(grep "display_rotate" /boot/config.txt 2>/dev/null || echo "not set")"
+    echo "HDMI mode: $(grep "hdmi_mode" /boot/config.txt 2>/dev/null || echo "not set")"
+    echo "Framebuffer: $(grep "framebuffer" /boot/config.txt 2>/dev/null || echo "not set")"
+    echo "Touch overlay: $(grep "dtoverlay=ads7846" /boot/config.txt 2>/dev/null || echo "not set")"
+else
+    echo "❌ Cannot read /boot/config.txt"
+fi
+
+# Show touch devices
+echo ""
+echo "👆 Touch Devices:"
+echo "================"
+if command -v xinput > /dev/null 2>&1 && [ -n "$DISPLAY" ]; then
+    xinput list 2>/dev/null | grep -i "touch\|pointer" | grep -v "Virtual core" || echo "No touch devices found via xinput"
+else
+    echo "xinput not available or no display"
+fi
+
+# Show DSI/DPI status
+echo ""
+echo "🔌 Display Interfaces:"
+echo "====================="
+for interface in /sys/class/drm/card*-*; do
+    if [ -e "$interface" ]; then
+        echo "Found: $(basename $interface)"
+    fi
+done
+
+# Provide configuration recommendations
+echo ""
+echo "💡 Configuration Recommendations:"
+echo "================================"
+
+case "$DISPLAY_TYPE" in
+    "dfrobot-dsi"|"dfrobot-dpi")
+        echo "✅ DFRobot 5\" Display Detected (Ribbon Cable)"
+        echo ""
+        echo "Recommended settings:"
+        echo "- Display connected via DSI/DPI ribbon cable"
+        echo "- May need specific DPI timing configuration"
+        echo "- Touch interface may be I2C or SPI based"
+        echo ""
+        echo "If display is cut off or misaligned:"
+        echo "  sudo /home/freepay/fix-dfrobot-display.sh"
+        ;;
+    
+    "raspberry-pi-hdmi"|"raspberry-pi-dsi")
+        echo "✅ Raspberry Pi Official Display Detected"
+        echo ""
+        echo "Current configuration should work correctly."
+        echo "Touch calibration is set for ADS7846 controller."
+        ;;
+    
+    *)
+        echo "⚠️  Unknown Display Type"
+        echo ""
+        echo "Using generic configuration."
+        echo "You may need to manually configure display and touch settings."
+        ;;
+esac
+EOF
+chmod +x build/app-bundle/config/detect-display.sh
+
+# Create DFRobot display fix script
+echo "🔧 Creating DFRobot display fix script..."
+cat > build/app-bundle/config/fix-dfrobot-display.sh << 'EOF'
+#!/bin/bash
+set -e
+
+echo "🔧 Fixing DFRobot 5\" Display Configuration (Ribbon Cable)..."
+echo "======================================================="
+
+# Function to detect display type
+detect_display_output() {
+    for output in DSI-1 DPI-1 HDMI-1 HDMI-2 HDMI-A-1; do
+        if xrandr 2>/dev/null | grep "$output connected" > /dev/null; then
+            echo "$output"
+            return 0
+        fi
+    done
+    echo "DSI-1"  # Default for ribbon cable displays
+}
+
+# Apply immediate X11 configuration
+echo "📱 Applying display configuration..."
+
+# Detect active display output
+DISPLAY_OUTPUT=$(detect_display_output)
+echo "✅ Active display output: $DISPLAY_OUTPUT"
+
+# Apply rotation
+if xrandr --output "$DISPLAY_OUTPUT" --rotate left 2>/dev/null; then
+    echo "✅ Display rotated to portrait mode"
+else
+    echo "⚠️  Could not apply rotation via xrandr"
+fi
+
+# Get actual resolution
+RESOLUTION=$(xrandr 2>/dev/null | grep "$DISPLAY_OUTPUT" | grep -oP '\d+x\d+' | head -1)
+echo "📏 Current resolution: $RESOLUTION"
+
+# Fix DPI/DSI configuration if needed
+echo "🖼️  Checking display interface configuration..."
+if [ -w /boot/config.txt ]; then
+    # Backup config
+    sudo cp /boot/config.txt /boot/config.txt.backup-dfrobot
+    echo "✅ Backed up /boot/config.txt"
+    
+    # Add DPI configuration for DFRobot displays
+    if [[ "$DISPLAY_OUTPUT" == "DPI-1" ]] && ! grep -q "dpi_group" /boot/config.txt; then
+        echo "" | sudo tee -a /boot/config.txt
+        echo "# DFRobot DPI display configuration" | sudo tee -a /boot/config.txt
+        echo "dpi_group=2" | sudo tee -a /boot/config.txt
+        echo "dpi_mode=87" | sudo tee -a /boot/config.txt
+        echo "dpi_timings=800 0 40 48 88 480 0 13 3 32 0 0 0 60 0 32000000 6" | sudo tee -a /boot/config.txt
+        echo "✅ Added DPI timing configuration"
+    fi
+    
+    # Update framebuffer settings
+    if ! grep -q "framebuffer_width" /boot/config.txt; then
+        echo "" | sudo tee -a /boot/config.txt
+        echo "# DFRobot display framebuffer settings" | sudo tee -a /boot/config.txt
+        echo "framebuffer_width=800" | sudo tee -a /boot/config.txt
+        echo "framebuffer_height=480" | sudo tee -a /boot/config.txt
+        echo "✅ Added framebuffer settings"
+    else
+        echo "ℹ️  Framebuffer settings already present"
+    fi
+    
+    # Ensure overscan is disabled
+    sudo sed -i 's/^#*disable_overscan=.*/disable_overscan=1/' /boot/config.txt
+    if ! grep -q "overscan_" /boot/config.txt; then
+        echo "overscan_left=0" | sudo tee -a /boot/config.txt
+        echo "overscan_right=0" | sudo tee -a /boot/config.txt
+        echo "overscan_top=0" | sudo tee -a /boot/config.txt
+        echo "overscan_bottom=0" | sudo tee -a /boot/config.txt
+        echo "✅ Added overscan settings"
+    fi
+fi
+
+# Configure touch for DFRobot (may be I2C or SPI based)
+echo "👆 Configuring touch input..."
+
+# Find touch devices (could be I2C, SPI, or other)
+TOUCH_DEVICES=$(xinput list 2>/dev/null | grep -i "touch" | grep -oP 'id=\K[0-9]+' || true)
+
+if [ -n "$TOUCH_DEVICES" ]; then
+    for device in $TOUCH_DEVICES; do
+        DEVICE_NAME=$(xinput list --name-only "$device" 2>/dev/null || echo "Device $device")
+        echo "📱 Configuring touch device: $DEVICE_NAME (ID: $device)"
+        
+        # Apply swapped + inverted X transformation (proven to work for DFRobot)
+        if xinput set-prop "$device" "Coordinate Transformation Matrix" 0 -1 1 1 0 0 0 0 1 2>/dev/null; then
+            echo "✅ Applied transformation matrix (Swapped + Inverted X)"
+        elif xinput set-prop "$device" "libinput Calibration Matrix" 0 -1 1 1 0 0 0 0 1 2>/dev/null; then
+            echo "✅ Applied libinput calibration matrix (Swapped + Inverted X)"
+        else
+            echo "⚠️  Could not apply transformation"
+        fi
+    done
+else
+    echo "⚠️  No touch devices found"
+    echo "Touch controller may need I2C/SPI enabled in /boot/config.txt"
+fi
+
+# Update X11 configuration for persistence
+echo "💾 Updating X11 configuration..."
+sudo mkdir -p /etc/X11/xorg.conf.d
+
+sudo tee /etc/X11/xorg.conf.d/99-dfrobot.conf > /dev/null << 'XCONF'
+# DFRobot 5" Display Configuration (Ribbon Cable)
+Section "InputClass"
+    Identifier "dfrobot-touch"
+    MatchIsTouchscreen "on"
+    MatchDevicePath "/dev/input/event*"
+    Driver "evdev"
+    # Swapped + Inverted X transformation (proven to work for DFRobot)
+    Option "TransformationMatrix" "0 -1 1 1 0 0 0 0 1"
+EndSection
+
+Section "InputClass"
+    Identifier "dfrobot-libinput-touch"
+    MatchIsTouchscreen "on"
+    MatchDevicePath "/dev/input/event*"
+    Driver "libinput"
+    # Swapped + Inverted X calibration (proven to work for DFRobot)
+    Option "CalibrationMatrix" "0 -1 1 1 0 0 0 0 1"
+EndSection
+XCONF
+
+echo "✅ Created /etc/X11/xorg.conf.d/99-dfrobot.conf"
+
+# Restart display manager to apply changes
+echo ""
+echo "🔄 Applying changes..."
+if systemctl is-active --quiet start-gui.service; then
+    echo "Restarting GUI service..."
+    sudo systemctl restart start-gui.service
+    echo "✅ GUI service restarted"
+fi
+
+echo ""
+echo "✅ DFRobot display configuration completed!"
+echo ""
+echo "📋 Summary of changes:"
+echo "- Display rotated to portrait mode"
+echo "- DPI/DSI timing configured (if applicable)"
+echo "- Framebuffer set to 800x480"
+echo "- Overscan disabled completely"
+echo "- Touch transformation matrix applied"
+echo "- X11 configuration saved for persistence"
+echo ""
+echo "🔄 Next steps:"
+echo "1. Test touch by tapping different areas of the screen"
+echo "2. If display still has issues, reboot the system:"
+echo "   sudo reboot"
+echo ""
+echo "🔙 To revert changes:"
+echo "- Config backup: sudo cp /boot/config.txt.backup-dfrobot /boot/config.txt"
+echo "- Remove X11 config: sudo rm /etc/X11/xorg.conf.d/99-dfrobot.conf"
+EOF
+chmod +x build/app-bundle/config/fix-dfrobot-display.sh
+
 # Create .xinitrc for X11 startup (enhanced with complete portrait mode support)
 echo "🪟 Creating .xinitrc..."
 cat > build/app-bundle/config/xinitrc << 'EOF'
@@ -730,12 +1089,13 @@ cat > build/app-bundle/config/bashrc-append << 'EOF'
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games"
 EOF
 
-# Create X11 input configuration for 5" touchscreen (portrait mode)
+# Create X11 input configuration for multiple touchscreen types
 echo "👆 Creating X11 touch configuration..."
 mkdir -p build/app-bundle/config/xorg.conf.d
 cat > build/app-bundle/config/xorg.conf.d/99-calibration.conf << 'EOF'
+# Configuration for Raspberry Pi official touchscreen
 Section "InputClass"
-    Identifier "calibration"
+    Identifier "calibration-rpi"
     MatchProduct "ADS7846 Touchscreen"
     Option "Calibration" "200 3900 200 3900"
     Option "SwapAxes" "0"
@@ -744,12 +1104,62 @@ Section "InputClass"
     Option "TransformationMatrix" "1 0 0 0 1 0 0 0 1"
 EndSection
 
+# Configuration for FT5x06 touch controller (used by DFRobot displays)
+Section "InputClass"
+    Identifier "ft5x06-dfrobot-touch"
+    MatchProduct "ft5x06"
+    MatchIsTouchscreen "on"
+    Driver "libinput"
+    # Swapped + Inverted X calibration for DFRobot displays
+    Option "CalibrationMatrix" "0 -1 1 1 0 0 0 0 1"
+EndSection
+
+# Alternative match for FT5x06
+Section "InputClass"
+    Identifier "ft5x06-generic-touch"
+    MatchProduct "generic ft5x06"
+    MatchIsTouchscreen "on"
+    Driver "libinput"
+    # Swapped + Inverted X calibration
+    Option "CalibrationMatrix" "0 -1 1 1 0 0 0 0 1"
+EndSection
+
+# Configuration for DFRobot touchscreens (ribbon cable) - fallback
+Section "InputClass"
+    Identifier "calibration-dfrobot"
+    MatchIsTouchscreen "on"
+    MatchDevicePath "/dev/input/event*"
+    Driver "evdev"
+    # Swapped + Inverted X transformation for DFRobot displays
+    Option "TransformationMatrix" "0 -1 1 1 0 0 0 0 1"
+EndSection
+
+# Configuration for DFRobot with libinput driver - fallback
+Section "InputClass"
+    Identifier "calibration-dfrobot-libinput"
+    MatchIsTouchscreen "on"
+    MatchDevicePath "/dev/input/event*"
+    Driver "libinput"
+    # Swapped + Inverted X calibration for DFRobot displays
+    Option "CalibrationMatrix" "0 -1 1 1 0 0 0 0 1"
+EndSection
+
+# Generic touchscreen configuration
 Section "InputClass"
     Identifier "evdev touchscreen catchall"
     MatchIsTouchscreen "on"
     MatchDevicePath "/dev/input/event*"
     Driver "evdev"
     Option "TransformationMatrix" "1 0 0 0 1 0 0 0 1"
+EndSection
+
+# Libinput configuration for modern touchscreens
+Section "InputClass"
+    Identifier "libinput touchscreen catchall"
+    MatchIsTouchscreen "on"
+    MatchDevicePath "/dev/input/event*"
+    Driver "libinput"
+    Option "CalibrationMatrix" "1 0 0 0 1 0 0 0 1"
 EndSection
 EOF
 
