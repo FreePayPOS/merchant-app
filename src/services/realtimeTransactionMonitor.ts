@@ -1,6 +1,6 @@
 import WebSocket from 'ws';
 import { Alchemy, Network, Utils, AssetTransfersResult, AssetTransfersCategory, SortingOrder } from 'alchemy-sdk';
-import { MERCHANT_ADDRESS, config } from '../config/index.js';
+import { MERCHANT_ADDRESS, config, getWebSocketUrl, getAlchemyNetwork, getChainById } from '../config/index.js';
 
 interface PaymentSession {
   recipientAddress: string;
@@ -84,7 +84,7 @@ export class RealtimeTransactionMonitor {
    * Establish WebSocket connection to Alchemy
    */
   private static async connectWebSocket(chainId: number): Promise<void> {
-    const wsUrl = this.getAlchemyWebSocketUrl(chainId);
+    const wsUrl = getWebSocketUrl(chainId);
     if (!wsUrl) {
       throw new Error(`No WebSocket URL available for chain ${chainId}`);
     }
@@ -658,46 +658,6 @@ export class RealtimeTransactionMonitor {
     console.log('✅ [WS DEBUG] Real-time monitoring stopped completely');
   }
 
-  /**
-   * Get Alchemy WebSocket URL for a specific chain
-   */
-  private static getAlchemyWebSocketUrl(chainId: number): string | null {
-    if (!config.ALCHEMY_API_KEY) {
-      console.error('❌ ALCHEMY_API_KEY not configured');
-      return null;
-    }
-
-    const networkMap: {[key: number]: string} = {
-      1: 'eth-mainnet',       // Ethereum
-      8453: 'base-mainnet',   // Base
-      42161: 'arb-mainnet',   // Arbitrum
-      10: 'opt-mainnet',      // Optimism
-      137: 'polygon-mainnet'  // Polygon
-    };
-    
-    const network = networkMap[chainId];
-    if (!network) {
-      console.error(`❌ No WebSocket support for chain ID ${chainId}`);
-      return null;
-    }
-
-    return `wss://${network}.g.alchemy.com/v2/${config.ALCHEMY_API_KEY}`;
-  }
-
-  /**
-   * Get Alchemy network enum for a chain ID
-   */
-  private static getAlchemyNetwork(chainId: number): Network | null {
-    const networkMap: {[key: number]: Network} = {
-      1: Network.ETH_MAINNET,
-      8453: Network.BASE_MAINNET,
-      42161: Network.ARB_MAINNET,
-      10: Network.OPT_MAINNET,
-      137: Network.MATIC_MAINNET
-    };
-    
-    return networkMap[chainId] || null;
-  }
 
   /**
    * Get or create Alchemy client for a specific chain
@@ -707,7 +667,7 @@ export class RealtimeTransactionMonitor {
       return this.alchemyClients.get(chainId)!;
     }
 
-    const network = this.getAlchemyNetwork(chainId);
+    const network = getAlchemyNetwork(chainId);
     if (!network || !config.ALCHEMY_API_KEY) {
       return null;
     }
