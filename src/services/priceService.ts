@@ -1,5 +1,5 @@
 import { Alchemy, Network } from 'alchemy-sdk';
-import { ALCHEMY_API_KEY, SUPPORTED_CHAINS } from '../config/index.js';
+import { ALCHEMY_API_KEY, SUPPORTED_CHAINS, getChainByName } from '../config/index.js';
 import { PriceCacheService } from './priceCacheService.js';
 
 /**
@@ -8,20 +8,6 @@ import { PriceCacheService } from './priceCacheService.js';
 export class PriceService {
   private static alchemy = new Alchemy({ apiKey: ALCHEMY_API_KEY });
 
-  /**
-   * Map chain names to Alchemy Network enum values
-   */
-  private static getAlchemyNetwork(chainName: string): Network | null {
-    const networkMap: {[key: string]: Network} = {
-      'ethereum': Network.ETH_MAINNET,
-      'base': Network.BASE_MAINNET,
-      'arbitrum': Network.ARB_MAINNET,
-      'optimism': Network.OPT_MAINNET,
-      'polygon': Network.MATIC_MAINNET
-    };
-    
-    return networkMap[chainName] || null;
-  }
 
   /**
    * Get token prices from Alchemy for a specific chain using contract addresses
@@ -36,17 +22,18 @@ export class PriceService {
       
       console.log(`⏱️ [PROFILE] Starting price fetch for ${tokenAddresses.length} tokens on ${chainName}`);
       
-      const chain = SUPPORTED_CHAINS.find(c => c.name === chainName);
+      const chain = getChainByName(chainName);
       if (!chain) {
         console.log(`❌ No supported chain configuration for: ${chainName}`);
         return {};
       }
       
-      const alchemyNetwork = this.getAlchemyNetwork(chainName);
-      if (!alchemyNetwork) {
+      if (!chain.network) {
         console.log(`❌ No Alchemy network mapping for chain: ${chainName}`);
         return {};
       }
+      
+      const alchemyNetwork = chain.network;
       
       // Prepare addresses with network info for Alchemy SDK
       const addressesWithNetwork = tokenAddresses.map(address => ({
