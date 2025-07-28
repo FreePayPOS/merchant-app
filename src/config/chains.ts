@@ -1,4 +1,6 @@
 import { Network } from 'alchemy-sdk';
+import dotenv from 'dotenv';
+dotenv.config();  
 
 // Multi-chain Alchemy configuration
 export interface ChainConfig {
