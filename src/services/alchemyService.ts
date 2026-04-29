@@ -1,8 +1,9 @@
-import { SUPPORTED_CHAINS, ChainConfig } from '../config/index.js';
+import { SUPPORTED_CHAINS, ChainConfig, getChainById, getBlockExplorerUrl, getAlchemyNetwork } from '../config/index.js';
 import { TokenWithPrice, AlchemyTokenBalance, AlchemyTokenMetadata, MultiChainPortfolio, ChainBalances } from '../types/index.js';
 import { PriceService } from './priceService.js';
 import { Alchemy, Network, TransactionReceipt, TransactionResponse, AlchemySubscription, AlchemyMinedTransactionsAddress, AssetTransfersCategory } from 'alchemy-sdk';
 import { config } from '../config/index.js';
+import { getSupportedTokenAddresses, getTokenInfo } from '../config/tokens.js';
 
 interface Transaction {
     hash: string;
@@ -39,11 +40,10 @@ export class AlchemyService {
     try {
       // Initialize Alchemy instances for all supported chains
       SUPPORTED_CHAINS.forEach(chain => {
-        const networkMapping = this.getAlchemyNetwork(chain.id);
-        if (networkMapping) {
+        if (chain.network) {
           const alchemy = new Alchemy({
             apiKey: config.ALCHEMY_API_KEY,
-            network: networkMapping,
+            network: chain.network,
           });
           this.alchemyInstances.set(chain.id, alchemy);
           console.log(`✅ Alchemy instance initialized for ${chain.displayName}`);
@@ -60,38 +60,6 @@ export class AlchemyService {
     }
   }
 
-  /**
-   * Generate block explorer URL for a transaction hash on the given chain
-   */
-  private static getBlockExplorerUrl(chainId: number, txHash: string): string {
-    const explorerMap: {[key: number]: string} = {
-      1: 'https://eth.blockscout.com/tx/',                 // Ethereum
-      8453: 'https://base.blockscout.com/tx/',             // Base  
-      42161: 'https://arbitrum.blockscout.com/tx/',        // Arbitrum
-      10: 'https://optimism.blockscout.com/tx/',           // Optimism
-      137: 'https://polygon.blockscout.com/tx/',           // Polygon
-      393402133025423: 'https://starkscan.co/tx/'          // Starknet
-    };
-    
-    const baseUrl = explorerMap[chainId];
-    return baseUrl ? `${baseUrl}${txHash}` : `https://eth.blockscout.com/tx/${txHash}`;
-  }
-
-  /**
-   * Map chain IDs to Alchemy Network enums
-   */
-  private static getAlchemyNetwork(chainId: number): Network | null {
-    const networkMap: {[key: number]: Network} = {
-      1: Network.ETH_MAINNET,        // Ethereum
-      8453: Network.BASE_MAINNET,    // Base
-      42161: Network.ARB_MAINNET,    // Arbitrum
-      10: Network.OPT_MAINNET,       // Optimism
-      137: Network.MATIC_MAINNET     // Polygon
-      // Note: Starknet (393402133025423) uses different API patterns and doesn't support WebSocket subscriptions
-    };
-    
-    return networkMap[chainId] || null;
-  }
 
   /**
    * Get chain configuration by chain ID
@@ -229,8 +197,18 @@ export class AlchemyService {
       if (balance <= 0) return null;
 
       // Get native token price
-      const ethPrice = await PriceService.getEthPrice();
-      const valueUSD = balance * ethPrice;
+      let nativeTokenPrice: number;
+      
+      // For ETH-based chains, use ETH price
+      if (chain.nativeToken.symbol === 'ETH') {
+        nativeTokenPrice = await PriceService.getEthPrice();
+      } else {
+        // For other native tokens (MATIC, BNB, AVAX, etc.), fetch their specific price
+        const nativePrices = await PriceService.getNativeTokenPrices([chain.id.toString()]);
+        nativeTokenPrice = nativePrices[chain.id.toString()] || 0;
+      }
+      
+      const valueUSD = balance * nativeTokenPrice;
 
       return {
         address: '0x0000000000000000000000000000000000000000',
@@ -238,7 +216,7 @@ export class AlchemyService {
         name: `${chain.nativeToken.name} (${chain.displayName})`,
         balance,
         decimals: chain.nativeToken.decimals,
-        priceUSD: ethPrice,
+        priceUSD: nativeTokenPrice,
         valueUSD,
         chainId: chain.id,
         chainName: chain.name,
@@ -257,6 +235,16 @@ export class AlchemyService {
    */
   private static async fetchTokenBalances(address: string, chain: ChainConfig): Promise<TokenWithPrice[]> {
     try {
+      // Get supported token addresses for this chain
+      const supportedTokens = getSupportedTokenAddresses(chain.id);
+      
+      if (supportedTokens.length === 0) {
+        console.log(`ℹ️  No supported tokens configured for ${chain.displayName}`);
+        return [];
+      }
+      
+      console.log(`🔍 Fetching ${supportedTokens.length} configured tokens for ${chain.displayName}:`, supportedTokens);
+
       const response = await fetch(chain.alchemyUrl, {
         method: 'POST',
         headers: {
@@ -266,7 +254,10 @@ export class AlchemyService {
           jsonrpc: '2.0',
           id: 2,
           method: 'alchemy_getTokenBalances',
-          params: [address]
+          params: [
+            address,
+            supportedTokens  // Only fetch configured stablecoins
+          ]
         })
       });
 
@@ -289,7 +280,7 @@ export class AlchemyService {
         return [];
       }
 
-      console.log(`✅ Found ${nonZeroBalances.length} tokens on ${chain.displayName}`);
+      console.log(`✅ Found ${nonZeroBalances.length} stablecoins on ${chain.displayName}`);
       return await this.processTokenBalances(nonZeroBalances, chain);
 
     } catch (error) {
@@ -308,76 +299,32 @@ export class AlchemyService {
       // Fetch prices first
       const tokenPrices = await PriceService.getTokenPricesForChain(tokenAddresses, chain.name);
       
-      // Fetch metadata for each token individually (alchemy_getTokenMetadata doesn't support batching)
-      const metadataPromises = tokenAddresses.map(async (address, index) => {
-        try {
-          const response = await fetch(chain.alchemyUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              jsonrpc: '2.0',
-              id: index + 10,
-              method: 'alchemy_getTokenMetadata',
-              params: [address]
-            })
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            return { address: address.toLowerCase(), metadata: data.result };
-          } else {
-            return { address: address.toLowerCase(), metadata: null };
-          }
-        } catch (error) {
-          return { address: address.toLowerCase(), metadata: null };
-        }
-      });
-      
-      const metadataResults = await Promise.all(metadataPromises);
-      
-      // Create metadata lookup map
-      const metadataMap: {[address: string]: any} = {};
-      metadataResults.forEach(result => {
-        metadataMap[result.address] = result.metadata;
-      });
-      
       const tokensWithPrices: TokenWithPrice[] = [];
       
-      nonZeroBalances.forEach((token, index) => {
+      nonZeroBalances.forEach((token) => {
         try {
           const balance = parseInt(token.tokenBalance, 16);
           const contractAddress = token.contractAddress.toLowerCase();
           
-          // Get metadata with fallback values
-          const metadata = metadataMap[contractAddress];
-          let decimals: number;
-          let symbol: string;
-          let name: string;
-
-          if (metadata) {
-            decimals = metadata.decimals || 18;
-            symbol = metadata.symbol || 'UNKNOWN';
-            name = metadata.name || 'Unknown Token';
-          } else {
-            // Fallback values when metadata is unavailable
-            decimals = this.getFallbackDecimals(contractAddress, chain.id);
-            symbol = this.getFallbackSymbol(contractAddress, chain.id);
-            name = this.getFallbackName(contractAddress, chain.id);
+          // Get token info from our configuration
+          const tokenInfo = getTokenInfo(chain.id, contractAddress);
+          
+          if (!tokenInfo) {
+            console.log(`⚠️  Token ${contractAddress} not found in configuration for ${chain.displayName}`);
+            return;
           }
           
-          const formattedBalance = balance / Math.pow(10, decimals);
+          const formattedBalance = balance / Math.pow(10, tokenInfo.decimals);
           const priceUSD = tokenPrices[contractAddress] || 0;
           const valueUSD = formattedBalance * priceUSD;
           
           if (formattedBalance > 0) {
             const tokenWithPrice = {
               address: token.contractAddress,
-              symbol,
-              name: `${name} (${chain.displayName})`,
+              symbol: tokenInfo.symbol,
+              name: `${tokenInfo.symbol} (${chain.displayName})`,
               balance: formattedBalance,
-              decimals,
+              decimals: tokenInfo.decimals,
               priceUSD,
               valueUSD,
               chainId: chain.id,
@@ -774,7 +721,7 @@ export class AlchemyService {
                 
                 if (valueInWei >= minimumValue) {
                   const txHash = tx.transaction_hash || tx.hash;
-                  const explorerUrl = AlchemyService.getBlockExplorerUrl(chainConfig.id, txHash);
+                  const explorerUrl = getBlockExplorerUrl(chainConfig.id, txHash);
                   
                   console.log(`✅ Starknet payment found! Value: ${valueInWei} wei`);
                   console.log(`🔗 View on block explorer: ${explorerUrl}`);
@@ -833,7 +780,7 @@ export class AlchemyService {
         return AlchemyService.startStarknetPolling(merchantAddress, minimumValue, chainConfig, onTransaction);
       }
 
-      const network = AlchemyService.getAlchemyNetwork(chainId);
+      const network = getAlchemyNetwork(chainId);
       if (!network) {
         throw new Error(`Network mapping not found for chain ${chainName} (ID: ${chainId})`);
       }
@@ -857,7 +804,7 @@ export class AlchemyService {
             addresses: [{ to: merchantAddress }]
           }, (tx: any) => {
             try {
-              const explorerUrl = AlchemyService.getBlockExplorerUrl(chainId, tx.hash);
+              const explorerUrl = getBlockExplorerUrl(chainId, tx.hash);
               
               console.log(`🔍 Transaction detected on ${chainName}:`, {
                 hash: tx.hash,
